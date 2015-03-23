@@ -1,0 +1,21 @@
+{
+  "name": "anybudget",
+  "main": "js/app.js",
+  "dependencies": {
+    "react": "^0.13.0",
+    "parse": "^1.3.5"
+  },
+  "devDependencies": {
+    "browserify": "^6.2.0",
+    "reactify": "^0.15.2",
+    "watchify": "^2.1.1"
+  },
+  "scripts": {
+    "start": "watchify -o js/bundle.js -v -d ."
+  },
+  "browserify": {
+    "transform": [
+      "reactify"
+    ]
+  }
+}

@@ -1,0 +1,428 @@
+body {
+  font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+  box-sizing: border-box;
+  background-color: #ededed;
+  background-image: linear-gradient(#50b54a, #50b54a);
+  background-attachment: fixed;
+  background-size: 100% 50%;
+  background-repeat: no-repeat;
+  -webkit-font-smoothing: antialiased;
+}
+html, body {
+  height: 100%;
+}
+* {
+  box-sizing: inherit;
+  margin: 0;
+  padding: 0;
+}
+
+a {
+  color: #59a1e8;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+h1, h2, h3 {
+  color: #475869;
+  font-weight: 200;
+}
+
+h1 {
+  font-family: 'Francois One', Arial, sans-serif;
+  margin: 80px auto 4px auto;
+  width: 60%;
+  font-weight: 400;
+  font-size: 36px;
+}
+h1 + h2 {
+  color: #7999b9;
+  width: 60%;
+  font-size: 18px;
+  margin: 0 auto 60px auto;
+}
+
+.centered {
+  text-align: center;
+}
+
+.button {
+  display: inline-block;
+  padding: 0 20px;
+  line-height: 33px;
+  height: 36px;
+  background: #59a1e8;
+  border-bottom: 3px solid #475869;
+  color: white;
+  vertical-align: top;
+}
+
+input[type=text], input[type=password], select {
+  outline: none;
+  border: 1px solid #475869;
+  color: #475869;
+  background: white;
+  font-size: 16px;
+  border-radius: 0;
+  padding: 0 6px;
+  -webkit-appearance: none;
+}
+select {
+  padding-right: 20px;
+  background-image: url(
+    'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" fill="#475869" width="10" height="7"><path d="M0,0 L10,0 5,7 Z"></path></svg>'
+  );
+  background-repeat: no-repeat;
+  background-position: top 50% right 6px;
+}
+input[type=text]:focus, input[type=password]:focus {
+  border-color: #59a1e8;
+}
+
+#app {
+  position: relative;
+  border-top: 20px solid #2c7228;
+  max-width: 1000px;
+  width: 90%;
+  min-height: 100%;
+  margin: 0 auto;
+  background: white;
+}
+
+.loginForm {
+  width: 300px;
+  border: 1px solid #c4e0f1;
+  padding: 10px;
+  margin: 0 auto;
+}
+.loginForm .row {
+  padding: 10px 0;
+}
+.loginForm .row:first-child {
+  padding-top: 0;
+}
+.loginForm .row:last-child {
+  padding-bottom: 0;
+}
+.loginForm .row label {
+  width: 80px;
+  float: left;
+  line-height: 30px;
+  text-align: right;
+  color: #475869;
+}
+.loginForm .row input {
+  display: block;
+  margin-left: 100px;
+  padding: 4px 6px;
+  height: 30px;
+  width: 170px;
+}
+.loginForm .errors {
+  color: #881a10;
+  font-size: 14px;
+}
+
+.logOut {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  width: 30px;
+  height: 30px;
+  padding: 5px;
+  cursor: pointer;
+}
+.logOut svg {
+  width: 20px;
+  height: 20px;
+  fill: #2c7228;
+}
+.logOut:hover {
+  background: #2c7228;
+}
+.logOut:hover svg {
+  fill: white;
+}
+
+.menu {
+  font-size: 0;
+  text-align: center;
+  margin: 40px 0;
+}
+.menu a {
+  display: inline-block;
+  border-style: solid;
+  border-color: #c4e0f1;
+  border-width: 0 1px;
+  background: white;
+  height: 48px;
+  line-height: 48px;
+  width: 150px;
+  text-align: center;
+  font-size: 24px;
+  font-weight: 200;
+  letter-spacing: 0.1em;
+  font-variant: small-caps;
+  color: #475869;
+  cursor: pointer;
+}
+.menu a:hover {
+  background: #c4e0f1;
+}
+.menu a:first-child {
+  border-left-width: 2px;
+}
+.menu a:last-child {
+  border-right-width: 2px;
+}
+.menu a.selected {
+  background: #7999b9;
+  border-color: #7999b9;
+  border-bottom: 3px solid #475869;
+  color: white;
+}
+
+.sidebar {
+  float: right;
+  width: 150px;
+}
+.mainPanel {
+  margin-right: 150px;
+  padding-bottom: 100px;
+}
+
+@media(max-width: 900px) {
+  .sidebar {
+    display: none;
+  }
+  .mainPanel {
+    margin-right: 0;
+  }
+}
+
+.sidebar .budget {
+  width: 120px;
+  font-size: 22px;
+  text-align: center;
+  cursor: pointer;
+}
+.sidebar input {
+  text-align: right;
+  width: 120px;
+  height: 30px;
+  line-height: 28px;
+}
+.sidebar h3 {
+  font-size: 16px;
+  width: 120px;
+  text-align: center;
+  margin-bottom: 10px;
+}
+.sidebar svg {
+  margin: 20px 0 0 0;
+}
+
+.appContent {
+  width: 90%;
+  margin: 0 auto;
+}
+
+.barChartWrap {
+  display: block;
+  height: 30px;
+  margin: 10px 0;
+  border: 1px solid #475869;
+  background: linear-gradient(#e0e0e0 10%, #ffffff 10%);
+}
+.barChartFill {
+  display: block;
+  height: 28px;
+  width: 0;
+  max-width: 100%;
+  background: #50b54a;
+  transition: width 0.3s ease-out;
+}
+
+.donutChart path {
+  -webkit-transform: scale(1);
+  transform: scale(1);
+  transition: all 0.3s ease;
+}
+.donutChart path:nth-of-type(6n){
+  fill: #5E7CF4;
+}
+.donutChart path:nth-of-type(6n+1){
+  fill: #5DDF2A;
+}
+.donutChart path:nth-of-type(6n+2){
+  fill: #E25AF4;
+}
+.donutChart path:nth-of-type(6n+3){
+  fill: #FAE048;
+}
+.donutChart path:nth-of-type(6n+4){
+  fill: #55C7F4;
+}
+.donutChart path:nth-of-type(6n+5){
+  fill: #F48C4F;
+}
+.donutChart path:hover {
+  -webkit-transform: scale(1.1);
+  transform: scale(1.1);
+}
+.donutChart text {
+  font-size: 16px;
+  font-weight: 200;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+.donutChart path:hover + text {
+  opacity: 1;
+}
+
+.expenseTable {
+  min-height: 120px;
+}
+
+.expenseRow {
+  position: relative;
+  height: 60px;
+  line-height: 60px;
+  font-weight: 200;
+  padding-right: 60px;
+}
+.expenseRow span {
+  height: 60px;
+  line-height: 60px;
+  display: inline-block;
+  vertical-align: top;
+}
+.expenseName {
+  display: inline-block;
+  width: 40%;
+  height: 60px;
+  margin-right: 10px;
+  font-size: 18px;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+.expenseCost {
+  display: inline-block;
+  width: 20%;
+  margin-right: 10px;
+}
+.expenseCategory {
+  height: 30px;
+}
+.expenseRow .delete {
+  position: absolute;
+  right: 0px;
+  top: 15px;
+  height: 30px;
+  width: 30px;
+  line-height: 23px;
+  background: #c61303;
+  font-size: 26px;
+  font-weight: bold;
+  color: white;
+  text-align: center;
+  border-bottom: 3px solid #62112A;
+}
+
+.emptyTable {
+  text-align: center;
+  padding: 40px 0;
+}
+.emptyTable h2 {
+  margin-bottom: 20px;
+}
+
+.loading {
+  height: 152px;
+  position: relative;
+}
+.loading:after {
+  position: absolute;
+  content: '';
+  display: block;
+  width: 40px;
+  height: 40px;
+  left: 50%;
+  margin-left: -20px;
+  top: 40px;
+  border-radius: 100%;
+  background: #aaa;
+  opacity: 1;
+  -webkit-animation: ping 1s infinite ease-in-out;
+  -moz-animation: ping 1s infinite ease-in-out;
+  animation: ping 1s infinite ease-in-out;
+}
+
+.expenseCreator {
+  border-top: 1px solid #e0e0e0;
+  padding-top: 20px;
+}
+
+.button.upload {
+  padding: 6px 10px;
+  line-height: inherit;
+  position: relative;
+  overflow: hidden;
+}
+.upload svg {
+  height: 20px;
+  fill: white;
+}
+.upload input[type=file] {
+  position: absolute;
+  top: 0;
+  right: 0;
+  opacity: 0;
+  cursor: pointer;
+  height: 100%;
+  min-width: 100%;
+}
+.expenseCreator input.name {
+  width: 200px;
+}
+.expenseCreator input.cost {
+  text-align: right;
+  width: 80px;
+}
+.expenseCreator input[type=text], .expenseCreator select {
+  vertical-align: top;
+  height: 36px;
+  margin: 0 5px;
+}
+.expenseCreator a {
+  margin: 0 5px;
+}
+
+@-webkit-keyframes ping {
+  0% {
+    -webkit-transform: scale(0);
+  }
+  100% {
+    -webkit-transform: scale(1);
+    opacity: 0;
+  }
+}
+@-moz-keyframes ping {
+  0% {
+    transform: scale(0);
+  }
+  100% {
+    transform: scale(1);
+    opacity: 0;
+  }
+}
+@keyframes ping {
+  0% {
+    transform: scale(0);
+  }
+  100% {
+    transform: scale(1);
+    opacity: 0;
+  }
+}

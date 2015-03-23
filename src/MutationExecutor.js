@@ -1,0 +1,221 @@
+/*
+ *  Copyright (c) 2015, Parse, LLC. All rights reserved.
+ *
+ *  You are hereby granted a non-exclusive, worldwide, royalty-free license to
+ *  use, copy, modify, and distribute this software in source code or binary
+ *  form for use in connection with the web services and APIs provided by Parse.
+ *
+ *  As with any software that integrates with the Parse platform, your use of
+ *  this software is subject to the Parse Terms of Service
+ *  [https://www.parse.com/about/terms]. This copyright notice shall be
+ *  included in all copies or substantial portions of the software.
+ *
+ *  THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ *  IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ *  FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ *  AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ *  LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+ *  FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
+ *  IN THE SOFTWARE.
+ *
+ */
+
+'use strict';
+
+var Id = require('./Id');
+
+var toString = Object.prototype.toString;
+// Special version of Parse._encode to handle our unique representations of
+// pointers
+function encode(data, seen) {
+  if (!seen) {
+    seen = [];
+  }
+  if (seen.indexOf(data) > -1) {
+    throw new Error('Tried to encode circular reference');
+  }
+  if (Array.isArray(data)) {
+    return data.map(function(val) {
+      return encode(val, seen);
+    });
+  }
+  if (toString.call(data) === '[object Date]') {
+    return { __type: 'Date', iso: data.toJSON() };
+  }
+  if (data instanceof Id) {
+    return {
+      __type: 'Pointer',
+      className: data.className,
+      objectId: data.objectId
+    };
+  }
+  if (data instanceof Parse.GeoPoint) {
+    return data.toJSON();
+  }
+  if (data instanceof Parse.File) {
+    if (!data.url()) {
+      throw new Error('Tried to save a reference to an unsaved file');
+    }
+    return {
+      __type: 'File',
+      name: data.name(),
+      url: data.url()
+    };
+  }
+  if (typeof data === 'object') {
+    if (data.objectId && data.className) {
+      return {
+        __type: 'Pointer',
+        className: data.className,
+        objectId: data.objectId
+      };
+    }
+
+    seen = seen.concat(data);
+    var output = {};
+    for (var key in data) {
+      output[key] = encode(data[key]);
+    }
+    return output;
+  }
+  return data;
+}
+
+function request(options) {
+  return Parse._request(options).then(function(result) {
+    if (result.createdAt) {
+      result.createdAt = new Date(result.createdAt);
+    }
+    if (result.updatedAt) {
+      result.updatedAt = new Date(result.updatedAt);
+    }
+    return Parse.Promise.as(result);
+  });
+}
+
+function execute(action, target, data) {
+  var payload;
+  switch (action) {
+    case 'CREATE':
+      return request({
+        method: 'POST',
+        route: 'classes',
+        className: target,
+        data: encode(data)
+      });
+    case 'DESTROY':
+      return request({
+        method: 'DELETE',
+        route: 'classes',
+        className: target.className,
+        objectId: target.objectId
+      });
+    case 'SET':
+      return request({
+        method: 'PUT',
+        route: 'classes',
+        className: target.className,
+        objectId: target.objectId,
+        data: encode(data)
+      });
+    case 'UNSET':
+      payload = {};
+      payload[data] = { __op: 'Delete' };
+      return request({
+        method: 'PUT',
+        route: 'classes',
+        className: target.className,
+        objectId: target.objectId,
+        data: payload
+      });
+    case 'INCREMENT':
+      payload = {};
+      payload[data.column] = {
+        __op: 'Increment',
+        amount: data.delta
+      };
+      return request({
+        method: 'PUT',
+        route: 'classes',
+        className: target.className,
+        objectId: target.objectId,
+        data: payload
+      });
+    case 'ADD':
+      payload = {};
+      payload[data.column] = {
+        __op: 'Add',
+        objects: encode(data.value)
+      };
+      return request({
+        method: 'PUT',
+        route: 'classes',
+        className: target.className,
+        objectId: target.objectId,
+        data: payload
+      });
+    case 'ADDUNIQUE':
+      payload = {};
+      payload[data.column] = {
+        __op: 'AddUnique',
+        objects: encode(data.value)
+      };
+      return request({
+        method: 'PUT',
+        route: 'classes',
+        className: target.className,
+        objectId: target.objectId,
+        data: payload
+      });
+    case 'REMOVE':
+      payload = {};
+      payload[data.column] = {
+        __op: 'Remove',
+        objects: encode(data.value)
+      };
+      return request({
+        method: 'PUT',
+        route: 'classes',
+        className: target.className,
+        objectId: target.objectId,
+        data: payload
+      });
+    case 'ADDRELATION':
+      payload = {};
+      payload[data.column] = {
+        __op: 'AddRelation',
+        objects: encode(data.targets)
+      };
+      return request({
+        method: 'PUT',
+        route: 'classes',
+        className: target.className,
+        objectId: target.objectId,
+        data: payload
+      });
+    case 'REMOVERELATION':
+      payload = {};
+      payload[data.column] = {
+        __op: 'RemoveRelation',
+        objects: encode(data.targets)
+      };
+      return request({
+        method: 'PUT',
+        route: 'classes',
+        className: target.className,
+        objectId: target.objectId,
+        data: payload
+      });
+  }
+  throw new TypeError('Invalid Mutation action: ' + action);
+}
+
+var MutationExecutor = {
+  execute: execute,
+};
+
+if (process.env.NODE_ENV === 'test') {
+  MutationExecutor.encode = encode;
+}
+
+module.exports = MutationExecutor;

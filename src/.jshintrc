@@ -1,0 +1,23 @@
+{
+  "browser": true,
+  "curly": true,
+  "devel": true,
+  "globalstrict": true,
+  "maxlen": 80,
+  "undef": true,
+  "unused": "vars",
+
+  "globals": {
+    "afterEach": false,
+    "beforeEach": false,
+    "describe": false,
+    "expect": false,
+    "it": false,
+    "jest": false,
+    "module": false,
+    "Parse": true,
+    "process": false,
+    "React": true,
+    "require": false
+  }
+}
