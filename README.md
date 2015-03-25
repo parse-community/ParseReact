@@ -67,8 +67,10 @@ ParseReact.Mutation.Create('Comment', {
 
 ## Getting Started
 
-You can download Parse + React from [within this Github repo](/dist/), and it's
-available on [NPM](https://www.npmjs.com/package/parse-react).
+You can download Parse + React from [within this Github repo](/dist/). It's
+also available [on our CDN](https://www.parsecdn.com/js/parse-react.js)
+([minified](https://www.parsecdn.com/js/parse-react.min.js)), and on
+[npm](https://www.npmjs.com/package/parse-react).
 
 If you're not familiar with React, we recommend you first walk through their
 [tutorials](http://facebook.github.io/react/docs/tutorial.html) before adding
@@ -83,9 +85,9 @@ loading the Parse + React library:
 <html>
   <head>
     <script src="http://fb.me/react-0.13.1.min.js"></script>
-    <script src="http://www.parsecdn.com/js/parse-latest.js"></script>
+    <script src="https://www.parsecdn.com/js/parse-latest.js"></script>
     <!-- Now include parse-react.js -->
-    <script src="parse-react.js"></script>
+    <script src="https://www.parsecdn.com/js/parse-react.js"></script>
     
     ...
 ```
