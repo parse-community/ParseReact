@@ -12,6 +12,6 @@ Methods for issuing mutations on Parse data
 
 Ways to subscribe to updates on local application concepts
 
-### [Parse SDK Patches](/docs/api/Parsepatches.md)
+### [Parse SDK Patches](/docs/api/ParsePatches.md)
 
 React-specific patches to the Parse SDK
