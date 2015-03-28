@@ -99,7 +99,7 @@ require Parse and React in every module that requires Parse + React:
 ```js
 var React = require('react');
 var Parse = require('parse').Parse;
-var ParseReact = require('parse-react.js');
+var ParseReact = require('parse-react');
 
 // ...
 ```
