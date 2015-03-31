@@ -7,6 +7,7 @@ jest.dontMock('../Id');
 jest.dontMock('../Mutation');
 jest.dontMock('../ObjectStore');
 jest.dontMock('../QueryTools');
+jest.dontMock('../StubParse');
 
 var Id = require('../Id');
 var Mutation = require('../Mutation');
@@ -135,7 +136,7 @@ describe('Object storage', function() {
     });
     expect(ObjectStore.fetchSubscribers(id)).toEqual(['hash']);
 
-    id = new Id('Item', 'O2');
+    id = new Id('Item', 'O1');
     ObjectStore.addSubscriber(id, 'hash2');
     expect(ObjectStore._rawStore).toEqual({
       'Item:O1': {
@@ -144,10 +145,13 @@ describe('Object storage', function() {
           value: 11
         },
         queries: {
-          hash: true
+          hash: true,
+          hash2: true,
         }
       }
     });
+    expect(ObjectStore.fetchSubscribers(id)).toEqual(['hash', 'hash2']);
+    id = new Id('Item', 'O2');
     expect(ObjectStore.fetchSubscribers(id)).toEqual([]);
   });
 

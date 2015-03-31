@@ -1,6 +1,6 @@
 /*
  *  Parse + React
- *  v0.1.0
+ *  v0.1.3
  */
 (function(f){if(typeof exports==="object"&&typeof module!=="undefined"){module.exports=f()}else if(typeof define==="function"&&define.amd){define([],f)}else{var g;if(typeof window!=="undefined"){g=window}else if(typeof global!=="undefined"){g=global}else if(typeof self!=="undefined"){g=self}else{g=this}g.ParseReact = f()}})(function(){var define,module,exports;return (function e(t,n,r){function s(o,u){if(!n[o]){if(!t[o]){var a=typeof require=="function"&&require;if(!u&&a)return a(o,!0);if(i)return i(o,!0);var f=new Error("Cannot find module '"+o+"'");throw f.code="MODULE_NOT_FOUND",f}var l=n[o]={exports:{}};t[o][0].call(l.exports,function(e){var n=t[o][1][e];return s(n?n:e)},l,l.exports,e,t,n,r)}return n[o].exports}var i=typeof require=="function"&&require;for(var o=0;o<r.length;o++)s(r[o]);return s})({1:[function(_dereq_,module,exports){
 /*
@@ -26,13 +26,6 @@
  */
 
 'use strict';
-
-if (typeof React === 'undefined') {
-  throw new Error('Cannot initialize ParseReact. React is not defined.');
-}
-if (typeof Parse === 'undefined') {
-  throw new Error('Cannot initialize ParseReact. Parse is not defined.');
-}
 
 var LocalSubscriptions = _dereq_('./LocalSubscriptions');
 var ParsePatches = _dereq_('./ParsePatches');
@@ -205,6 +198,7 @@ module.exports = Id;
 var flatten = _dereq_('./flatten');
 var Id = _dereq_('./Id');
 var ObjectStore = _dereq_('./ObjectStore');
+var Parse = _dereq_('./StubParse');
 
 /**
  * Local Subscriptions allow applications to subscribe to local objects, such
@@ -289,7 +283,7 @@ var LocalSubscriptions = {
 
 module.exports = LocalSubscriptions;
 
-},{"./Id":3,"./ObjectStore":8,"./flatten":15}],5:[function(_dereq_,module,exports){
+},{"./Id":3,"./ObjectStore":8,"./StubParse":11,"./flatten":16}],5:[function(_dereq_,module,exports){
 /*
  *  Copyright (c) 2015, Parse, LLC. All rights reserved.
  *
@@ -315,6 +309,7 @@ module.exports = LocalSubscriptions;
 'use strict';
 
 var LocalSubscriptions = _dereq_('./LocalSubscriptions');
+var Parse = _dereq_('./StubParse');
 var SubscriptionManager = _dereq_('./SubscriptionManager');
 
 var queryHash = _dereq_('./QueryTools').queryHash;
@@ -485,7 +480,7 @@ var Mixin = {
 
 module.exports = Mixin;
 
-},{"./LocalSubscriptions":4,"./QueryTools":10,"./SubscriptionManager":12,"./warning":16}],6:[function(_dereq_,module,exports){
+},{"./LocalSubscriptions":4,"./QueryTools":10,"./StubParse":11,"./SubscriptionManager":13,"./warning":17}],6:[function(_dereq_,module,exports){
 /*
  *  Copyright (c) 2015, Parse, LLC. All rights reserved.
  *
@@ -759,7 +754,7 @@ module.exports = {
   }
 };
 
-},{"./Delta":2,"./Id":3,"./UpdateChannel":13,"./warning":16}],7:[function(_dereq_,module,exports){
+},{"./Delta":2,"./Id":3,"./UpdateChannel":14,"./warning":17}],7:[function(_dereq_,module,exports){
 /*
  *  Copyright (c) 2015, Parse, LLC. All rights reserved.
  *
@@ -785,6 +780,7 @@ module.exports = {
 'use strict';
 
 var Id = _dereq_('./Id');
+var Parse = _dereq_('./StubParse');
 
 var toString = Object.prototype.toString;
 // Special version of Parse._encode to handle our unique representations of
@@ -982,7 +978,7 @@ if ("development" === 'test') {
 
 module.exports = MutationExecutor;
 
-},{"./Id":3}],8:[function(_dereq_,module,exports){
+},{"./Id":3,"./StubParse":11}],8:[function(_dereq_,module,exports){
 /*
  *  Copyright (c) 2015, Parse, LLC. All rights reserved.
  *
@@ -1355,7 +1351,7 @@ if ("development" === 'test') {
 
 module.exports = ObjectStore;
 
-},{"./Id":3,"./QueryTools":10,"./flatten":15}],9:[function(_dereq_,module,exports){
+},{"./Id":3,"./QueryTools":10,"./flatten":16}],9:[function(_dereq_,module,exports){
 /*
  *  Copyright (c) 2015, Parse, LLC. All rights reserved.
  *
@@ -1386,6 +1382,7 @@ module.exports = ObjectStore;
 
 var flatten = _dereq_('./flatten');
 var LocalSubscriptions = _dereq_('./LocalSubscriptions');
+var Parse = _dereq_('./StubParse');
 
 var oldSignUp = Parse.User.prototype.signUp;
 var oldLogIn = Parse.User.prototype.logIn;
@@ -1451,7 +1448,7 @@ var ParsePatches = {
 
 module.exports = ParsePatches;
 
-},{"./LocalSubscriptions":4,"./flatten":15}],10:[function(_dereq_,module,exports){
+},{"./LocalSubscriptions":4,"./StubParse":11,"./flatten":16}],10:[function(_dereq_,module,exports){
 /*
  *  Copyright (c) 2015, Parse, LLC. All rights reserved.
  *
@@ -1478,6 +1475,7 @@ module.exports = ParsePatches;
 
 var equalObjects = _dereq_('./equalObjects');
 var Id = _dereq_('./Id');
+var Parse = _dereq_('./StubParse');
 
 /**
  * Query Hashes are deterministic hashes for Parse Queries.
@@ -1755,7 +1753,46 @@ module.exports = {
   matchesQuery: matchesQuery
 };
 
-},{"./Id":3,"./equalObjects":14}],11:[function(_dereq_,module,exports){
+},{"./Id":3,"./StubParse":11,"./equalObjects":15}],11:[function(_dereq_,module,exports){
+/*
+ *  Copyright (c) 2015, Parse, LLC. All rights reserved.
+ *
+ *  You are hereby granted a non-exclusive, worldwide, royalty-free license to
+ *  use, copy, modify, and distribute this software in source code or binary
+ *  form for use in connection with the web services and APIs provided by Parse.
+ *
+ *  As with any software that integrates with the Parse platform, your use of
+ *  this software is subject to the Parse Terms of Service
+ *  [https://www.parse.com/about/terms]. This copyright notice shall be
+ *  included in all copies or substantial portions of the software.
+ *
+ *  THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ *  IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ *  FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ *  AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ *  LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+ *  FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
+ *  IN THE SOFTWARE.
+ *
+ */
+
+'use strict';
+
+if ("development" === 'test') {
+  require = _dereq_;
+}
+
+if (typeof Parse === 'undefined') {
+  // After build, we replace `require` with `require`, so that it can use the
+  // execution environment's version of require at runtime.
+  if (typeof require !== 'function') {
+    throw new Error('Parse + React: Parse is not defined.');
+  }
+  module.exports = require('parse').Parse;
+} else {
+  module.exports = Parse;
+}
+},{}],12:[function(_dereq_,module,exports){
 /*
  *  Copyright (c) 2015, Parse, LLC. All rights reserved.
  *
@@ -1992,7 +2029,7 @@ if ("development" === 'test') {
 }
 
 module.exports = Subscription;
-},{"./Id":3,"./ObjectStore":8}],12:[function(_dereq_,module,exports){
+},{"./Id":3,"./ObjectStore":8}],13:[function(_dereq_,module,exports){
 /*
  *  Copyright (c) 2015, Parse, LLC. All rights reserved.
  *
@@ -2130,7 +2167,7 @@ if ("development" === 'test') {
 
 module.exports = SubscriptionManager;
 
-},{"./QueryTools":10,"./Subscription":11}],13:[function(_dereq_,module,exports){
+},{"./QueryTools":10,"./Subscription":12}],14:[function(_dereq_,module,exports){
 /*
  *  Copyright (c) 2015, Parse, LLC. All rights reserved.
  *
@@ -2160,8 +2197,9 @@ var Id = _dereq_('./Id');
 var LocalSubscriptions = _dereq_('./LocalSubscriptions');
 var MutationExecutor = _dereq_('./MutationExecutor');
 var ObjectStore = _dereq_('./ObjectStore');
-var SubscriptionManager = _dereq_('./SubscriptionManager');
+var Parse = _dereq_('./StubParse');
 var QueryTools = _dereq_('./QueryTools');
+var SubscriptionManager = _dereq_('./SubscriptionManager');
 
 var localCount = 0;
 
@@ -2330,7 +2368,7 @@ module.exports = {
   issueMutation: issueMutation,
 };
 
-},{"./Delta":2,"./Id":3,"./LocalSubscriptions":4,"./MutationExecutor":7,"./ObjectStore":8,"./QueryTools":10,"./SubscriptionManager":12}],14:[function(_dereq_,module,exports){
+},{"./Delta":2,"./Id":3,"./LocalSubscriptions":4,"./MutationExecutor":7,"./ObjectStore":8,"./QueryTools":10,"./StubParse":11,"./SubscriptionManager":13}],15:[function(_dereq_,module,exports){
 /*
  *  Copyright (c) 2015, Parse, LLC. All rights reserved.
  *
@@ -2404,7 +2442,7 @@ function equalObjects(a, b) {
 
 module.exports = equalObjects;
 
-},{}],15:[function(_dereq_,module,exports){
+},{}],16:[function(_dereq_,module,exports){
 /*
  *  Copyright (c) 2015, Parse, LLC. All rights reserved.
  *
@@ -2430,6 +2468,7 @@ module.exports = equalObjects;
 'use strict';
 
 var Id = _dereq_('./Id');
+var Parse = _dereq_('./StubParse');
 
 var warning = _dereq_('./warning');
 
@@ -2483,7 +2522,7 @@ function flatten(object, seen) {
 
 module.exports = flatten;
 
-},{"./Id":3,"./warning":16}],16:[function(_dereq_,module,exports){
+},{"./Id":3,"./StubParse":11,"./warning":17}],17:[function(_dereq_,module,exports){
 /*
  *  Copyright (c) 2015, Parse, LLC. All rights reserved.
  *

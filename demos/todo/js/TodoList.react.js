@@ -21,13 +21,14 @@
  */
 
 var Parse = require('parse').Parse;
-// ParseReact sits on top of your Parse and React singletons
-var ParseReact = require('../../../dist/parse-react.js');
+var React = require('react');
+// ParseReact sits on top of your Parse singleton
+var ParseReact = require('parse-react');
 
 var TodoItem = require('./TodoItem.react.js');
 var TodoCreator = require('./TodoCreator.react.js');
 
-// Top-Level component that binds to Parse using the ParseReact constructor.
+// Top-Level component that binds to Parse using the ParseReact Mixin.
 // This should help demonstrate the "It's Just That Easy" potential here.
 var TodoList = React.createClass({
   mixins: [ParseReact.Mixin],

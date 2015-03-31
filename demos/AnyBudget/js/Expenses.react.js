@@ -20,7 +20,9 @@
  *
  */
 
-var ParseReact = require('../../../dist/parse-react.js');
+var React = require('react');
+var Parse = require('parse').Parse;
+var ParseReact = require('parse-react');
 
 var ExpenseCreator = require('./ExpenseCreator.react.js');
 

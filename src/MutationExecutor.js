@@ -23,6 +23,7 @@
 'use strict';
 
 var Id = require('./Id');
+var Parse = require('./StubParse');
 
 var toString = Object.prototype.toString;
 // Special version of Parse._encode to handle our unique representations of

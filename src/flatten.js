@@ -23,6 +23,7 @@
 'use strict';
 
 var Id = require('./Id');
+var Parse = require('./StubParse');
 
 var warning = require('./warning');
 

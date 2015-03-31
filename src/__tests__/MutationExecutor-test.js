@@ -7,11 +7,12 @@ jest.setMock('../UpdateChannel', {
   }
 });
 
+jest.dontMock('parse');
+
 jest.dontMock('../Mutation');
 jest.dontMock('../MutationExecutor');
 jest.dontMock('../Id');
-
-jest.dontMock('parse');
+jest.dontMock('../StubParse');
 
 var Id = require('../Id');
 var Mutation = require('../Mutation');
@@ -19,7 +20,9 @@ var MutationExecutor = require('../MutationExecutor');
 
 var Parse = require('parse').Parse;
 Parse.initialize('testid', 'testkey');
-Parse._getInstallationId = function() { return 'installationid'; };
+Parse._getInstallationId = function() {
+  return Parse.Promise.as('installationid');
+};
 Parse.VERSION = 'js';
 
 var testXHR = function(urlTest, bodyTest, response) {

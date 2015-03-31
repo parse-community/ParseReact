@@ -7,6 +7,7 @@ var gulp = require('gulp');
 var source = require('vinyl-source-stream');
 var uglify = require('gulp-uglify');
 var insert = require('gulp-insert');
+var replace = require('gulp-replace');
 
 var pkg = require('./package.json');
 
@@ -57,11 +58,12 @@ gulp.task('build', function() {
   .bundle();
   return stream.pipe(source('parse-react.js'))
     .pipe(derequire())
+    .pipe(replace('parse_r', 'require'))
     .pipe(insert.prepend(versionHeader()))
     .pipe(gulp.dest('./dist'));
 });
 
-gulp.task('min', function() {
+gulp.task('publish', function() {
   var stream = browserify({
     entries: './src/ParseReact.js',
     standalone: 'ParseReact',
@@ -72,6 +74,8 @@ gulp.task('min', function() {
   .transform(envify({NODE_ENV: 'production'}))
   .bundle();
   return stream.pipe(source('parse-react.min.js'))
+    .pipe(derequire())
+    .pipe(replace('parse_r', 'require'))
     .pipe(buffer())
     .pipe(uglify())
     .pipe(insert.prepend(fullHeader()))

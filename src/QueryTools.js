@@ -24,6 +24,7 @@
 
 var equalObjects = require('./equalObjects');
 var Id = require('./Id');
+var Parse = require('./StubParse');
 
 /**
  * Query Hashes are deterministic hashes for Parse Queries.

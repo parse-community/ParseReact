@@ -1,10 +1,11 @@
 'use strict';
 
+jest.dontMock('parse');
+
 jest.dontMock('../QueryTools');
+jest.dontMock('../StubParse');
 jest.dontMock('../Subscription');
 jest.dontMock('../SubscriptionManager');
-
-jest.dontMock('parse');
 
 var QueryTools = require('../QueryTools');
 var queryHash = QueryTools.queryHash;

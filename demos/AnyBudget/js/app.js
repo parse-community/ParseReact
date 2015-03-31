@@ -20,8 +20,8 @@
  *
  */
 
-var React = window.React = require('react');
-var Parse = window.Parse = require('parse').Parse;
+var React = require('react');
+var Parse = require('parse').Parse;
 
 // Insert your app's keys here:
 Parse.initialize('APPLICATION_ID', 'JAVASCRIPT_KEY');

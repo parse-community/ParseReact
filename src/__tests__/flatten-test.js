@@ -4,6 +4,7 @@ jest.dontMock('parse');
 
 jest.dontMock('../flatten.js');
 jest.dontMock('../Id.js');
+jest.dontMock('../StubParse.js');
 
 var warning = require('../warning');
 var flatten = require('../flatten');

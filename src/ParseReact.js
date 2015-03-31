@@ -22,13 +22,6 @@
 
 'use strict';
 
-if (typeof React === 'undefined') {
-  throw new Error('Cannot initialize ParseReact. React is not defined.');
-}
-if (typeof Parse === 'undefined') {
-  throw new Error('Cannot initialize ParseReact. Parse is not defined.');
-}
-
 var LocalSubscriptions = require('./LocalSubscriptions');
 var ParsePatches = require('./ParsePatches');
 

@@ -17,6 +17,7 @@ jest.setMock('../ObjectStore', {
 
 jest.dontMock('../Id');
 jest.dontMock('../QueryTools');
+jest.dontMock('../StubParse');
 jest.dontMock('../Subscription');
 
 jest.dontMock('parse');

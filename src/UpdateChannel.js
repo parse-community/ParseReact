@@ -27,8 +27,9 @@ var Id = require('./Id');
 var LocalSubscriptions = require('./LocalSubscriptions');
 var MutationExecutor = require('./MutationExecutor');
 var ObjectStore = require('./ObjectStore');
-var SubscriptionManager = require('./SubscriptionManager');
+var Parse = require('./StubParse');
 var QueryTools = require('./QueryTools');
+var SubscriptionManager = require('./SubscriptionManager');
 
 var localCount = 0;
 

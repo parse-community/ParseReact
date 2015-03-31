@@ -28,6 +28,7 @@
 
 var flatten = require('./flatten');
 var LocalSubscriptions = require('./LocalSubscriptions');
+var Parse = require('./StubParse');
 
 var oldSignUp = Parse.User.prototype.signUp;
 var oldLogIn = Parse.User.prototype.logIn;

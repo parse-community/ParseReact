@@ -20,6 +20,8 @@
  *
  */
 
+var React = require('react');
+
 var DonutChart = React.createClass({
   render: function() {
     var segments = this.props.segments || [];

@@ -5,6 +5,7 @@ jest.dontMock('parse');
 jest.dontMock('../equalObjects');
 jest.dontMock('../Id');
 jest.dontMock('../QueryTools');
+jest.dontMock('../StubParse');
 
 var Parse = require('parse').Parse;
 

@@ -25,6 +25,7 @@
 var flatten = require('./flatten');
 var Id = require('./Id');
 var ObjectStore = require('./ObjectStore');
+var Parse = require('./StubParse');
 
 /**
  * Local Subscriptions allow applications to subscribe to local objects, such

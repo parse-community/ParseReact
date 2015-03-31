@@ -20,6 +20,8 @@
  *
  */
 
+var React = require('react');
+
 var BarChart = React.createClass({
   getInitialState: function() {
     return { width: 0 };

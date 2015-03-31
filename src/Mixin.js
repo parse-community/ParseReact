@@ -23,6 +23,7 @@
 'use strict';
 
 var LocalSubscriptions = require('./LocalSubscriptions');
+var Parse = require('./StubParse');
 var SubscriptionManager = require('./SubscriptionManager');
 
 var queryHash = require('./QueryTools').queryHash;

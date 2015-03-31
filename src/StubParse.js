@@ -20,15 +20,19 @@
  *
  */
 
-var React = require('react');
-var Parse = require('parse').Parse;
+'use strict';
 
-// Insert your app's keys here:
-Parse.initialize('APPLICATION_ID', 'JAVASCRIPT_KEY');
+if (process.env.NODE_ENV === 'test') {
+  parse_r = require;
+}
 
-var TodoList = require('./TodoList.react.js');
-
-React.render(
-  <TodoList />,
-  document.getElementById('app')
-);
+if (typeof Parse === 'undefined') {
+  // After build, we replace `parse_r` with `require`, so that it can use the
+  // execution environment's version of require at runtime.
+  if (typeof parse_r !== 'function') {
+    throw new Error('Parse + React: Parse is not defined.');
+  }
+  module.exports = parse_r('parse').Parse;
+} else {
+  module.exports = Parse;
+}
