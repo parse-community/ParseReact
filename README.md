@@ -93,8 +93,8 @@ loading the Parse + React library:
 ```
 
 If you're using a tool like Webpack or Browserify to enable Common JS `require`
-statements, there are two approaches you can take. The first is to simply
-require Parse and React in every module that requires Parse + React:
+statements, you need to make sure you also include the `'parse'` npm package
+in your dependencies.
 
 ```js
 var React = require('react');
@@ -102,16 +102,6 @@ var Parse = require('parse').Parse;
 var ParseReact = require('parse-react');
 
 // ...
-```
-
-However if this gets repetitive, you can add them to the global scope once in
-your app's entry point, and never require them again:
-
-```js
-var React = window.React = require('react');
-var Parse = window.Parse = require('parse').Parse;
-// In every module, you can load Parse + React without worrying about dependencies
-var ParseReact = require('parse-react');
 ```
 
 Now that you've included all of the necessary libraries, you're ready to start
