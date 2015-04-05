@@ -18,7 +18,17 @@
  *  FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
  *  IN THE SOFTWARE.
  *
+ *  @flow
  */
+
+'use strict';
+
+var Id = require('./Id');
+var ObjectStore = require('./ObjectStore');
+
+type ParseObject = {
+  id: Id
+}
 
 /**
  * A Subscription represents the relationship between components and the results
@@ -28,11 +38,6 @@
  * When data is added to, removed from, or updated within the result set, the
  * Subscription will push the latest data to all subscribed components.
  */
-
-'use strict';
-
-var Id = require('./Id');
-var ObjectStore = require('./ObjectStore');
 
 /**
  * When we store ordering information alongside Ids, this method can map over
@@ -67,81 +72,87 @@ function compareObjectOrder(queryOrder, object, orderInfo) {
   return 0;
 }
 
-var Subscription = function(query) {
-  // The query used to fetch results for this Subscription
-  this.originalQuery = query;
-  // Whether there is an outstanding AJAX request for results
-  this.pending = false;
-  // The data used to push results back to components
-  this.subscribers = [];
-  // The Ids of the objects returned by this Subscription's query
-  this.resultSet = [];
-};
+class Subscription {
+  originalQuery: ParseQuery;
+  pending: boolean;
+  subscribers: { [key: string]:
+    { onNext: (value: any) => void; onError?: (error: any) => void } };
+  resultSet: Array<any>;
+  observationCount: number;
 
-Subscription.prototype = {
+  constructor(query: ParseQuery) {
+    // The query used to fetch results for this Subscription
+    this.originalQuery = query;
+    // Whether there is an outstanding AJAX request for results
+    this.pending = false;
+    // The data used to push results back to components
+    this.subscribers = {};
+    // The Ids of the objects returned by this Subscription's query
+    this.resultSet = [];
+
+    this.observationCount = 0;
+
+    this.issueQuery();
+  }
+
   /**
    * Registers a component with this subscription. When new data is available,
    * `callback` will be called to send that data back to the component. `name`
    * determines the prop to which that data is attached.
    */
-  addSubscriber: function(callback, name) {
-    for (var i = 0; i < this.subscribers.length; i++) {
-      if (this.subscribers[i].callback === callback) {
-        // This component has already subscribed
-        return;
-      }
+  addSubscriber(callbacks:
+      { onNext: (value: any) => void; onError?: (error: any) => void }
+    ): string {
+    var oid = 'o' + this.observationCount++;
+    this.subscribers[oid] = callbacks;
+
+    var resultSet = this.resultSet;
+    if (resultSet[0] && !(resultSet[0] instanceof Id)) {
+      resultSet = resultSet.map(extractId);
     }
-    this.subscribers.push({
-      callback: callback,
-      name: name
-    });
-    if (!this.pending) {
-      this.issueQuery();
-    }
-  },
+    callbacks.onNext(
+      resultSet.length ? ObjectStore.getDataForIds(resultSet) : []
+    );
+
+    return oid;
+  }
 
   /**
    * Removes a component from this subscription. The callback passed into the
    * function will be dissociated from the query, and the function will return
    * the remaining number of subscribers.
    */
-  removeSubscriber: function(callback) {
-    for (var i = 0; i < this.subscribers.length; i++) {
-      if (this.subscribers[i].callback === callback) {
-        this.subscribers.splice(i, 1);
-        return this.subscribers.length;
-      }
-    }
-    return this.subscribers.length;
-  },
+  removeSubscriber(observationId: string): number {
+    delete this.subscribers[observationId];
+    return Object.keys(this.subscribers).length;
+  }
 
   /**
    * Executes the query for this subscription. When the results are returned,
    * they are cached in the ObjectStore and then pushed to all subscribed
    * components.
    */
-  issueQuery: function() {
-    var self = this;
+  issueQuery() {
     this.pending = true;
-    this.originalQuery.find().then(function(results) {
-      self.pending = false;
-      self.resultSet = ObjectStore.storeQueryResults(
+    this.originalQuery.find().then((results) => {
+      this.pending = false;
+      this.resultSet = ObjectStore.storeQueryResults(
         results,
-        self.originalQuery
+        this.originalQuery
       );
-      self.pushData();
-    }, function(err) {
-      self.pending = false;
-      self.pushData({ error: err });
+      this.pushData();
+    }, (err) => {
+      this.pending = false;
+      this.pushData({ error: err });
     });
-  },
+  }
 
   /**
    * Add an object to the result set. This does not guarantee uniqueness.
    * If silent is truthy, this operation will not trigger a push of data to
    * the subscribed components.
    */
-  addResult: function(object, silent) {
+  addResult(object: ParseObject, silent: boolean) {
     if (this.originalQuery._order) {
       // We need to insert the object into the appropriate location
       if (this.originalQuery._skip) {
@@ -178,9 +189,9 @@ Subscription.prototype = {
     if (!silent) {
       this.pushData();
     }
-  },
+  }
 
-  removeResult: function(id, silent) {
+  removeResult(id: Id, silent: boolean) {
     var idString = id.toString();
     for (var i = 0; i < this.resultSet.length; i++) {
       var curId = this.resultSet[i];
@@ -195,7 +206,7 @@ Subscription.prototype = {
         return;
       }
     }
-  },
+  }
 
   /**
    * Fetches the full data for the latest result set, and passes it to each
@@ -205,8 +216,8 @@ Subscription.prototype = {
    * if you already have calculated the result data, or wish to send an
    * alternative payload.
    */
-  pushData: function(override) {
-    var data = override;
+  pushData(override?: any) {
+    var data = override || [];
     var results = this.resultSet;
     // Fetch a subset of results if the query has a limit
     if (this.originalQuery._limit > -1) {
@@ -222,13 +233,18 @@ Subscription.prototype = {
       }
       data = ObjectStore.getDataForIds(resultSet);
     }
-    for (var i = 0; i < this.subscribers.length; i++) {
-      this.subscribers[i].callback(this.subscribers[i].name, data);
+    for (var oid in this.subscribers) {
+      var subscriber = this.subscribers[oid];
+      if (Array.isArray(data)) {
+        subscriber.onNext(data);
+      } else if (data.error && subscriber.onError) {
+        subscriber.onError(data.error);
+      }
     }
   }
 };
 
-if (process.env.NODE_ENV === 'test') {
+if (typeof process !== 'undefined' && process.env.NODE_ENV === 'test') {
   // Expose the object comparator for testing
   Subscription.compareObjectOrder = compareObjectOrder;
 }

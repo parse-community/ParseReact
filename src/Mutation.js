@@ -18,12 +18,14 @@
  *  FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
  *  IN THE SOFTWARE.
  *
+ *  @flow
  */
 
 'use strict';
 
-var Id = require('./Id');
 var Delta = require('./Delta');
+var Id = require('./Id');
+var Parse = require('./StubParse');
 var UpdateChannel = require('./UpdateChannel');
 
 var warning = require('./warning');
@@ -40,7 +42,7 @@ var warning = require('./warning');
  * key/value pair `waitForServer: true` to the dispatch() call.
  */
 
-function normalizeTarget(obj) {
+function normalizeTarget(obj: any): Id {
   if (obj instanceof Id) {
     return obj;
   }
@@ -51,7 +53,7 @@ function normalizeTarget(obj) {
     ' and objectId');
 }
 
-function validateColumn(column) {
+function validateColumn(column: string) {
   if (!column ||
       typeof column !== 'string' ||
       column === 'objectId' ||
@@ -80,21 +82,25 @@ function validateFields(data) {
   }
 }
 
-var Noop = {
-  dispatch: function() { }
-};
+class Mutation {
+  action: string;
+  target: Id|string;
+  data: any;
 
-var Mutation = function(action, target, data) {
-  this.action = action;
-  this.target = target;
-  this.data = data;
-};
-Mutation.prototype = {
-  dispatch: function(options) {
+  constructor(action: string, target: Id|string, data: any) {
+    this.action = action;
+    this.target = target;
+    this.data = data;
+  }
+
+  dispatch(options: { [key: string]: boolean }) {
+    if (this.action === 'NOOP') {
+      return Parse.Promise.as({});
+    }
     return UpdateChannel.issueMutation(this, options || {});
-  },
+  }
 
-  applyTo: function(base) {
+  applyTo(base: any) {
     var self = this;
     switch (this.action) {
       case 'SET':
@@ -144,11 +150,11 @@ Mutation.prototype = {
         });
         break;
     }
-  },
+  }
 
-  generateDelta: function(serverData) {
-    if (this.action === 'DESTROY') {
-      return new Delta(this.target, 'DESTROY');
+  generateDelta(serverData: any): Delta {
+    if (this.action === 'DESTROY' && this.target instanceof Id) {
+      return new Delta(this.target, {}, { destroy: true });
     }
     var changes = {};
     if (this.action === 'UNSET') {
@@ -159,13 +165,15 @@ Mutation.prototype = {
     // override with all fields we got back from the server
     // For other mutations, we rely on server data to give us the latest state
     var attr;
-    var id = this.target;
+    var id;
+    if (this.target instanceof Id) {
+      id = this.target;
+    } else {
+      id = new Id(this.target, serverData.objectId);
+    }
     if (this.action === 'CREATE' || this.action === 'SET') {
       for (attr in this.data) {
         changes[attr] = { set: this.data[attr] };
-      }
-      if (this.action === 'CREATE') {
-        id = new Id(this.target, serverData.objectId);
       }
     }
     for (attr in serverData) {
@@ -178,37 +186,38 @@ Mutation.prototype = {
     }
     return new Delta(id, changes);
   }
-};
+}
 
 module.exports = {
+  Mutation: Mutation,
   // Basic Mutations
-  Create: function(className, data) {
+  Create: function(className: string, data: any): Mutation {
     data = data || {};
     validateFields(data);
 
     return new Mutation('CREATE', className, data);
   },
 
-  Destroy: function(id) {
+  Destroy: function(id: Id): Mutation {
     return new Mutation('DESTROY', normalizeTarget(id), null);
   },
 
-  Set: function(id, data) {
+  Set: function(id: Id, data: any): Mutation {
     if (!data || !Object.keys(data).length) {
       warning('Performing a Set mutation with no changes: dispatching this' +
         'will do nothing.');
-      return Noop;
+      return new Mutation('NOOP', '', {});
     }
     validateFields(data);
     return new Mutation('SET', normalizeTarget(id), data);
   },
 
-  Unset: function(id, column) {
+  Unset: function(id: Id, column: string): Mutation {
     validateColumn(column);
     return new Mutation('UNSET', normalizeTarget(id), column);
   },
 
-  Increment: function(id, column, delta) {
+  Increment: function(id: Id, column: string, delta?: number): Mutation {
     validateColumn(column);
     if (typeof delta !== 'undefined' && isNaN(delta)) {
       throw new TypeError('Cannot increment by a non-numeric amount');
@@ -222,7 +231,7 @@ module.exports = {
   },
 
   // Array Mutations
-  Add: function(id, column, value) {
+  Add: function(id: Id, column: string, value: any): Mutation {
     validateColumn(column);
     var payload = {
       column: column,
@@ -231,7 +240,7 @@ module.exports = {
     return new Mutation('ADD', normalizeTarget(id), payload);
   },
 
-  AddUnique: function(id, column, value) {
+  AddUnique: function(id: Id, column: string, value: any): Mutation {
     validateColumn(column);
     var payload = {
       column: column,
@@ -240,7 +249,7 @@ module.exports = {
     return new Mutation('ADDUNIQUE', normalizeTarget(id), payload);
   },
 
-  Remove: function(id, column, value) {
+  Remove: function(id: Id, column: string, value: any): Mutation {
     validateColumn(column);
     var payload = {
       column: column,
@@ -250,7 +259,7 @@ module.exports = {
   },
 
   // Relation Mutations
-  AddRelation: function(id, column, target) {
+  AddRelation: function(id: Id, column: string, target: Id): Mutation {
     validateColumn(column);
     var targets = (Array.isArray(target) ? target : [target]);
     var payload = {
@@ -260,7 +269,7 @@ module.exports = {
     return new Mutation('ADDRELATION', normalizeTarget(id), payload);
   },
 
-  RemoveRelation: function(id, column, target) {
+  RemoveRelation: function(id: Id, column: string, target: Id): Mutation {
     validateColumn(column);
     var targets = (Array.isArray(target) ? target : [target]);
     var payload = {

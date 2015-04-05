@@ -1,6 +1,6 @@
 {
   "name": "parse-react",
-  "version": "0.1.4",
+  "version": "0.2.0",
   "description": "Use Parse data in React applications",
   "homepage": "https://github.com/ParsePlatform/ParseReact",
   "repository": {
@@ -10,14 +10,19 @@
   "files": [
     "dist/",
     "src/",
+    "lib/",
+    "LICENSE",
     "README.md"
   ],
-  "main": "dist/parse-react.js",
+  "main": "lib/ParseReact.js",
   "devDependencies": {
+    "babel-jest": "~5.0.0",
+    "babelify": "^6.0.2",
     "browserify": "~9.0.3",
     "bundle-collapser": "~1.1.4",
     "envify": "~3.2.0",
     "gulp": "~3.8.11",
+    "gulp-babel": "^5.1.0",
     "gulp-derequire": "~2.0.0",
     "gulp-insert": "~0.4.0",
     "gulp-replace": "^0.5.3",
@@ -31,6 +36,7 @@
     "test": "NODE_ENV=test jest"
   },
   "jest": {
-    "rootDir": "src"
+    "rootDir": "src",
+    "scriptPreprocessor": "../node_modules/babel-jest"
   }
 }

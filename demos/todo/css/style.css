@@ -26,6 +26,9 @@ body {
   -webkit-animation: ping 1s infinite ease-in-out;
   animation: ping 1s infinite ease-in-out;
 }
+.todo_list.loading .todo_item {
+  display: none;
+}
 .todo_item {
   position: relative;
   padding: 5px 0;

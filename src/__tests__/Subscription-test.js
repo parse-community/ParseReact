@@ -1,17 +1,27 @@
 'use strict';
 
 jest.mock('../ObjectStore');
+var fakeStore = {};
 jest.setMock('../ObjectStore', {
   getDataForIds: function(ids) {
     var data = [];
     for (var i = 0; i < ids.length; i++) {
-      data.push({
-        objectId: ids[i].objectId,
-        className: ids[i].className,
-        data: 'value'
-      });
+      data.push(fakeStore[ids[i]]);
     }
     return data;
+  },
+  storeQueryResults: function(results) {
+    var ids = [];
+    for (var i = 0; i < results.length; i++) {
+      var id = new Id(results[i].className, results[i].id);
+      fakeStore[id] = {
+        className: results[i].className,
+        objectId: results[i].id,
+        value: results[i].get('value')
+      };
+      ids.push(id);
+    }
+    return ids;
   }
 });
 
@@ -75,66 +85,50 @@ describe('compareObjectOrder', function() {
 });
 
 describe('Subscription', function() {
+  it('begins to fetch the query on construction', function() {
+    var q = new Parse.Query('Item');
+    q.find = jest.genMockFn();
+    q.find.mockReturnValue(new Parse.Promise());
+    var sub = new Subscription(q);
+    expect(sub.originalQuery).toBe(q);
+    expect(q.find.mock.calls.length).toBe(1);
+  });
+
   it('can add or remove unique subscribers', function() {
     var q = new Parse.Query('Item');
+    q.find = jest.genMockFn();
+    q.find.mockReturnValue(new Parse.Promise());
     var sub = new Subscription(q);
-    sub.issueQuery = jest.genMockFn();
 
     expect(sub.subscribers).toEqual([]);
-    var mockCallback = function() { };
-    sub.addSubscriber(mockCallback, 'items');
-    expect(sub.subscribers).toEqual([
-      {
-        callback: mockCallback,
-        name: 'items'
-      }
-    ]);
+    var mockNext = jest.genMockFn();
+    var oid1 = sub.addSubscriber({ onNext: mockNext });
+    var expectedSubscribers = {};
+    expectedSubscribers[oid1] = { onNext: mockNext };
+    expect(sub.subscribers).toEqual(expectedSubscribers);
 
-    sub.addSubscriber(mockCallback, 'moreItems');
-    expect(sub.subscribers).toEqual([
-      {
-        callback: mockCallback,
-        name: 'items'
-      }
-    ]);
+    var oid2 = sub.addSubscriber({ onNext: mockNext });
+    expectedSubscribers[oid2] = { onNext: mockNext };
+    expect(sub.subscribers).toEqual(expectedSubscribers);
 
-    var mockOtherCallback = function() { };
-    sub.addSubscriber(mockOtherCallback, 'otherItems');
-    expect(sub.subscribers).toEqual([
-      {
-        callback: mockCallback,
-        name: 'items'
-      }, {
-        callback: mockOtherCallback,
-        name: 'otherItems'
-      }
-    ]);
+    var remaining = sub.removeSubscriber('NOT_VALID_OID');
+    expect(remaining).toBe(2);
+    expect(sub.subscribers).toEqual(expectedSubscribers);
 
-    sub.removeSubscriber(function() { });
-    expect(sub.subscribers).toEqual([
-      {
-        callback: mockCallback,
-        name: 'items'
-      }, {
-        callback: mockOtherCallback,
-        name: 'otherItems'
-      }
-    ]);
+    remaining = sub.removeSubscriber(oid1);
+    expect(remaining).toBe(1);
+    delete expectedSubscribers[oid1];
+    expect(sub.subscribers).toEqual(expectedSubscribers);
 
-    sub.removeSubscriber(mockCallback);
-    expect(sub.subscribers).toEqual([
-      {
-        callback: mockOtherCallback,
-        name: 'otherItems'
-      }
-    ]);
-
-    sub.removeSubscriber(mockOtherCallback);
-    expect(sub.subscribers).toEqual([]);
+    remaining = sub.removeSubscriber(oid2);
+    expect(remaining).toBe(0);
+    expect(sub.subscribers).toEqual({});
   });
 
   it('can add and remove objects from the result set', function() {
     var q = new Parse.Query('Item');
+    q.find = jest.genMockFn();
+    q.find.mockReturnValue(new Parse.Promise());
     var sub = new Subscription(q);
     sub.pushData = jest.genMockFn();
 
@@ -169,6 +163,8 @@ describe('Subscription', function() {
 
   it('can add and remove objects in an ordered set', function() {
     var q = new Parse.Query('Candidate').descending('votes');
+    q.find = jest.genMockFn();
+    q.find.mockReturnValue(new Parse.Promise());
     var sub = new Subscription(q);
     sub.pushData = jest.genMockFn();
     expect(sub.resultSet).toEqual([]);
@@ -258,30 +254,110 @@ describe('Subscription', function() {
 
   it('pushes result sets to subscribers', function() {
     var q = new Parse.Query('Item');
+    q.find = jest.genMockFn();
+    var promise = new Parse.Promise();
+    q.find.mockReturnValue(promise);
     var sub = new Subscription(q);
-    sub.issueQuery = jest.genMockFn();
 
     var cb = jest.genMockFn();
-    sub.addSubscriber(cb, 'items');
+    var lastResult = {};
+    sub.addSubscriber({ onNext: function(data) {
+      lastResult.first = data;
+    } });
+    // Expect synchronous update
+    expect(lastResult.first).toEqual([]);
 
-    var override = [];
-    sub.pushData(override);
+    promise.resolve([
+      new Parse.Object('Item', { objectId: 'I1', value: 12 })
+    ]);
 
-    expect(cb.mock.calls.length).toBe(1);
-    expect(cb.mock.calls[0][0]).toBe('items');
-    expect(cb.mock.calls[0][1]).toBe(override);
-
-    sub.addResult({ id: new Id('Item', 'I1') });
-
-    expect(cb.mock.calls.length).toBe(2);
-    expect(cb.mock.calls[1][0]).toBe('items');
-    expect(cb.mock.calls[1][1]).toEqual([
+    expect(lastResult.first).toEqual([
       {
-        objectId: 'I1',
         className: 'Item',
-        data: 'value'
+        objectId: 'I1',
+        value: 12
       }
     ]);
+
+    sub.addSubscriber({ onNext: function(data) {
+      lastResult.second = data;
+    } });
+    // It should immediately receive known results
+    expect(lastResult.second).toEqual([
+      {
+        className: 'Item',
+        objectId: 'I1',
+        value: 12
+      }
+    ]);
+
+    var i2 = new Id('Item', 'I2');
+    fakeStore[i2] = {
+      className: 'Item',
+      objectId: 'I2',
+      value: 44
+    };
+    sub.addResult({ id: new Id('Item', 'I2') });
+
+    expect(lastResult).toEqual({
+      first: [
+        {
+          className: 'Item',
+          objectId: 'I1',
+          value: 12
+        }, {
+          className: 'Item',
+          objectId: 'I2',
+          value: 44
+        }
+      ],
+      second: [
+        {
+          className: 'Item',
+          objectId: 'I1',
+          value: 12
+        }, {
+          className: 'Item',
+          objectId: 'I2',
+          value: 44
+        }
+      ]
+    });
+  });
+
+  it('respects query limits', function() {
+    var q = new Parse.Query('Item').limit(1);
+    q.find = jest.genMockFn();
+    q.find.mockReturnValue(Parse.Promise.as([
+      new Parse.Object('Item', { objectId: 'I1', value: 12 })
+    ]));
+    var sub = new Subscription(q);
+
+    var cb = jest.genMockFn();
+    var lastResult = {};
+    sub.addSubscriber({ onNext: function(data) {
+      lastResult.first = data;
+    } });
+
+    var i2 = new Id('Item', 'I2');
+    fakeStore[i2] = {
+      className: 'Item',
+      objectId: 'I2',
+      value: 44
+    };
+    sub.addResult({ id: new Id('Item', 'I2') });
+
+    expect(sub.resultSet.length).toBe(2);
+
+    expect(lastResult).toEqual({
+      first: [
+        {
+          className: 'Item',
+          objectId: 'I1',
+          value: 12
+        }
+      ]
+    });
   });
 
   it("honors the original query 'limit'", function() {

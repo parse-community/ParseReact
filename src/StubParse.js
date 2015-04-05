@@ -22,17 +22,17 @@
 
 'use strict';
 
-if (process.env.NODE_ENV === 'test') {
-  parse_r = require;
-}
-
 if (typeof Parse === 'undefined') {
-  // After build, we replace `parse_r` with `require`, so that it can use the
-  // execution environment's version of require at runtime.
-  if (typeof parse_r !== 'function') {
-    throw new Error('Parse + React: Parse is not defined.');
+  if (typeof require === 'function') {
+    try {
+      module.exports = require('parse').Parse;
+    } catch (e) {
+      throw new Error('Failed to require Parse module. You need the Parse SDK' +
+        ' installed to use Parse + React');
+    }
+  } else {
+    throw new Error('Cannot initialize Parse + React: Parse is not defined.');
   }
-  module.exports = parse_r('parse').Parse;
 } else {
   module.exports = Parse;
 }

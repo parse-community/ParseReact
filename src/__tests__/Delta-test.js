@@ -24,8 +24,9 @@ describe('Delta', function() {
   });
 
   it('maps DESTROY actions at the top level', function() {
-    var delta = new Delta(new Id('Klass', 'D'), 'DESTROY');
-    expect(delta.map).toBe('DESTROY');
+    var delta = new Delta(new Id('Klass', 'D'), {}, { destroy: true });
+    expect(delta.map).toEqual({});
+    expect(delta.destroy).toBe(true);
   });
 
   it('merges with changes from another delta', function() {
@@ -44,7 +45,8 @@ describe('Delta', function() {
 
   it('can only merge with another Delta', function() {
     var delta = new Delta(new Id('Klass', 'D'), { count: { set: 5 } });
-    expect(delta.merge.bind(delta, 'Not a Delta')).toThrow();
+    expect(delta.merge.bind(delta, 'Not a Delta'))
+      .toThrow(new TypeError('Only Deltas can be merged'));
   });
 
   it('uses the other value when merging a matching field', function() {
@@ -70,18 +72,21 @@ describe('Delta', function() {
 
   it('overrides with a DESTROY', function() {
     var deltaA = new Delta(new Id('Klass', 'A'), { name: { set: 'Fido' } });
-    var deltaB = new Delta(new Id('Klass', 'A'), 'DESTROY');
+    var deltaB = new Delta(new Id('Klass', 'A'), {}, { destroy: true });
     deltaB.merge(deltaA);
-    expect(deltaB.map).toBe('DESTROY');
+    expect(deltaB.map).toEqual({});
+    expect(deltaB.destroy).toBe(true);
 
     deltaA.merge(deltaB);
-    expect(deltaA.map).toBe('DESTROY');
+    expect(deltaA.map).toEqual({});
+    expect(deltaA.destroy).toBe(true);
   });
 
   it('will not merge Deltas for different objects', function() {
     var deltaA = new Delta(new Id('Klass', 'A'), { count: { set: 5 } });
     var deltaB = new Delta(new Id('Klass', 'B'), { count: { set: 7 } });
 
-    expect(deltaA.merge.bind(deltaA, deltaB)).toThrow();
+    expect(deltaA.merge.bind(deltaA, deltaB))
+      .toThrow(new Error('Only Deltas for the same Object can be merged'));
   });
 });

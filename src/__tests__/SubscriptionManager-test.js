@@ -84,20 +84,20 @@ describe('SubscriptionManager', function() {
   });
 
   it('can subscribe or unsubscribe to a query', function() {
-    Subscription.prototype.addSubscriber = jest.genMockFn();
-    Subscription.prototype.removeSubscriber = function() {
-      return 0;
-    };
-    var cb = jest.genMockFn();
+    Subscription.prototype.issueQuery = jest.genMockFn();
+
     var q = new Parse.Query('Comment');
-    SubscriptionManager.subscribeQuery(cb, 'comments', q);
+    var obs = SubscriptionManager.subscribeToQuery(q,
+      { onNext: function() {} });
 
-    var sub = SubscriptionManager.getSubscription(queryHash(q));
+    var hash = queryHash(q);
+    var sub = SubscriptionManager.getSubscription(hash);
     expect(sub).not.toBe(null);
-    expect(sub.addSubscriber.mock.calls.length).toBe(1);
+    expect(Object.keys(sub.subscribers).length).toBe(1);
 
-    SubscriptionManager.unsubscribeQuery(queryHash(q), cb);
-    sub = SubscriptionManager.getSubscription(queryHash(q));
+    obs.dispose();
+    expect(Object.keys(sub.subscribers).length).toBe(0);
+    sub = SubscriptionManager.getSubscription(hash);
     expect(sub).toBe(null);
   });
 });

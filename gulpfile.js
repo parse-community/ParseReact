@@ -1,3 +1,5 @@
+var babel = require('gulp-babel');
+var babelify = require('babelify');
 var browserify = require('browserify');
 var buffer = require('vinyl-buffer');
 var collapser = require('bundle-collapser/plugin');
@@ -49,35 +51,48 @@ function fullHeader() {
   );
 }
 
-gulp.task('build', function() {
+// Compile ES6 + Flow source into ES5 code for the npm package
+gulp.task('lib', function() {
+  return gulp.src('./src/*.js')
+    .pipe(babel())
+    .pipe(gulp.dest('./lib'));
+});
+
+// Build the concatentated and compressed files for CDN and download
+gulp.task('dist', function() {
   var stream = browserify({
     entries: './src/ParseReact.js',
     standalone: 'ParseReact'
   })
+  .exclude('parse')
+  .transform(babelify)
   .transform(envify({NODE_ENV: 'development'}))
   .bundle();
   return stream.pipe(source('parse-react.js'))
     .pipe(derequire())
-    .pipe(replace('parse_r', 'require'))
     .pipe(insert.prepend(versionHeader()))
     .pipe(gulp.dest('./dist'));
 });
 
-gulp.task('publish', function() {
+gulp.task('min', function() {
   var stream = browserify({
     entries: './src/ParseReact.js',
     standalone: 'ParseReact',
-    builtins: {},
+    builtins: { _process: true },
     plugins: [collapser],
     debug: false
   })
+  .exclude('parse')
+  .ignore('_process')
+  .transform(babelify)
   .transform(envify({NODE_ENV: 'production'}))
   .bundle();
   return stream.pipe(source('parse-react.min.js'))
     .pipe(derequire())
-    .pipe(replace('parse_r', 'require'))
     .pipe(buffer())
     .pipe(uglify())
     .pipe(insert.prepend(fullHeader()))
     .pipe(gulp.dest('./dist'));
 });
+
+gulp.task('default', ['lib', 'dist', 'min']);

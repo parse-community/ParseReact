@@ -18,6 +18,7 @@
  *  FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
  *  IN THE SOFTWARE.
  *
+ *  @flow
  */
 
 'use strict';
@@ -28,23 +29,25 @@
  * map key.
  */
 
-var Id = function(className, objectId) {
-  this.className = className;
-  this.objectId = objectId;
-};
+class Id {
+  className: string;
+  objectId: string;
 
-Id.fromString = function(str) {
-  var split = str.split(':');
-  if (split.length !== 2) {
-    throw new TypeError('Cannot create Id object from this string');
+  constructor(className: string, objectId: string) {
+    this.className = className;
+    this.objectId = objectId;
   }
-  return new Id(split[0], split[1]);
-};
-
-Id.prototype = {
-  toString: function() {
+  toString(): string {
     return this.className + ':' + this.objectId;
   }
-};
+
+  static fromString(str: string) {
+    var split = str.split(':');
+    if (split.length !== 2) {
+      throw new TypeError('Cannot create Id object from this string');
+    }
+    return new Id(split[0], split[1]);
+  }
+}
 
 module.exports = Id;

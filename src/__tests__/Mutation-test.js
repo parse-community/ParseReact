@@ -1,7 +1,10 @@
 'use strict';
 
+jest.dontMock('parse');
+
 jest.dontMock('../Delta');
 jest.dontMock('../Id');
+jest.dontMock('../StubParse');
 jest.dontMock('../Mutation');
 
 var Delta = require('../Delta');
@@ -40,8 +43,9 @@ describe('Mutation Generators', function() {
     expect(m.data).toEqual({ value: 12, name: 'Jeff' });
 
     m = Mutation.Set(id);
-    expect(Object.keys(m)).toEqual(['dispatch']);
-    expect(m.dispatch()).toBe(undefined);
+    expect(m.action).toBe('NOOP');
+    var result = m.dispatch();
+    expect(result instanceof Parse.Promise).toBe(true);
   });
 
   it('generates an Unset Mutation', function() {
@@ -209,7 +213,8 @@ describe('Mutation', function() {
     var delta = m.generateDelta({});
     expect(delta instanceof Delta).toBe(true);
     expect(delta.id).toBe(id);
-    expect(delta.map).toBe('DESTROY');
+    expect(delta.map).toEqual({});
+    expect(delta.destroy).toBe(true);
 
     m = Mutation.Create('Klass', { value: 12 });
     var editDate = new Date();
