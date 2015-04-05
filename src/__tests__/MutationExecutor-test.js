@@ -250,6 +250,36 @@ describe('Parse encoder', function() {
         objectId: 'O1'
       }
     });
+
+    var Item = Parse.Object.extend('Item');
+    var obj = new Item();
+    obj.id = 'I2';
+    expect(encode({
+      item: obj
+    })).toEqual({
+      item: {
+        __type: 'Pointer',
+        className: 'Item',
+        objectId: 'I2'
+      }
+    });
+
+    var user = new Parse.User();
+    user.id = 'U2';
+    expect(encode({
+      owner: user
+    })).toEqual({
+      owner: {
+        __type: 'Pointer',
+        className: '_User',
+        objectId: 'U2'
+      }
+    });
+
+    var unsaved = new Item();
+    expect(encode.bind(null, {
+      item: unsaved
+    })).toThrow(new Error('Tried to save a pointer to an unsaved Parse Object'));
   });
 
   it('properly translates Parse Files', function() {
@@ -316,6 +346,18 @@ describe('Parse encoder', function() {
     var b = { a: a };
     a.b = b;
 
-    expect(encode.bind(null, a)).toThrow();
+    expect(encode.bind(null, a)).toThrow(new Error('Tried to encode circular reference'));
+
+    a = {};
+    b = { obj: { a : a } };
+    a.b = b;
+
+    expect(encode.bind(null, a)).toThrow(new Error('Tried to encode circular reference'));
+
+    a = []
+    b = [a];
+    a.push(b);
+
+    expect(encode.bind(null, a)).toThrow(new Error('Tried to encode circular reference'));    
   });
 });

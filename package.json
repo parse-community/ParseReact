@@ -1,6 +1,6 @@
 {
   "name": "parse-react",
-  "version": "0.1.3",
+  "version": "0.1.4",
   "description": "Use Parse data in React applications",
   "homepage": "https://github.com/ParsePlatform/ParseReact",
   "repository": {

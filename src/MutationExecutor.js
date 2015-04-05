@@ -36,6 +36,7 @@ function encode(data, seen) {
     throw new Error('Tried to encode circular reference');
   }
   if (Array.isArray(data)) {
+    seen = seen.concat([data]);
     return data.map(function(val) {
       return encode(val, seen);
     });
@@ -43,11 +44,15 @@ function encode(data, seen) {
   if (toString.call(data) === '[object Date]') {
     return { __type: 'Date', iso: data.toJSON() };
   }
-  if (data instanceof Id) {
+  if ((data instanceof Id) || (data instanceof Parse.Object)) {
+    var id = (data instanceof Id) ? data.objectId : data.id;
+    if (typeof id === 'undefined') {
+      throw new Error('Tried to save a pointer to an unsaved Parse Object');
+    }
     return {
       __type: 'Pointer',
       className: data.className,
-      objectId: data.objectId
+      objectId: id
     };
   }
   if (data instanceof Parse.GeoPoint) {
@@ -75,7 +80,7 @@ function encode(data, seen) {
     seen = seen.concat(data);
     var output = {};
     for (var key in data) {
-      output[key] = encode(data[key]);
+      output[key] = encode(data[key], seen);
     }
     return output;
   }
