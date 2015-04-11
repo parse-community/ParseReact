@@ -209,14 +209,14 @@ Subscription.prototype = {
     var data = override;
     var results = this.resultSet;
     // Fetch a subset of results if the query has a limit
-    if (this.originalQuery.limit > -1) {
-      results = results.slice(0, this.originalQuery.limit);
+    if (this.originalQuery._limit > -1) {
+      results = results.slice(0, this.originalQuery._limit);
     }
     if (results[0] && !(results[0] instanceof Id)) {
       results = results.map(extractId);
     }
     if (typeof override === 'undefined') {
-      var resultSet = this.resultSet;
+      var resultSet = results;
       if (resultSet[0] && !(resultSet[0] instanceof Id)) {
         resultSet = resultSet.map(extractId);
       }
