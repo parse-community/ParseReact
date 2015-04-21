@@ -153,6 +153,13 @@ function destroyMutationStack(target) {
 function resolveMutation(target, payloadId, delta) {
   var stack = pendingMutations[target];
   var i;
+  if (delta.map === "DESTROY") {
+    return {
+      id: target,
+      latest: null,
+      fields: []
+    };
+  }
   for (i = 0; i < stack.length; i++) {
     if (stack[i].payloadId === payloadId) {
       delete stack[i].mutation;
