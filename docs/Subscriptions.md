@@ -56,3 +56,27 @@ observe: function() {
   };
 }
 ```
+# Subscribing to Relational Parse Data
+To subscribe to Parse data that necessitates a relational query simply create a
+function that builds a relational query and return that query to your observe function.
+
+```js
+observe: function(){
+  var self = this;
+  return {
+    relational_data: (self.getRelationalData()) 
+  }
+},
+getRelationalData: function(){
+  //Build your relational query and return it
+  var Post = Parse.Object.extend("Post");
+  var Comment = Parse.Object.extend("Comment");
+  
+  var innerQuery = new Parse.Query(Post);
+  innerQuery.exists("image");
+  
+  var query = new Parse.Query(Comment);
+  query.matchesQuery("post", innerQuery);
+  return query;
+}
+```
