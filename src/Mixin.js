@@ -53,7 +53,7 @@ var Mixin = {
   componentWillUpdate: function(nextProps: any, nextState: any) {
     // only subscribe if props or state changed
     if (nextProps !== this.props || nextState !== this.state) {
-      this._subscribe();
+      this._subscribe(nextProps, nextState);
     }
   },
 
