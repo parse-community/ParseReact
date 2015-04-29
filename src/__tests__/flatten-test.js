@@ -48,6 +48,26 @@ describe('flatten', function() {
     expect(warning.mock.calls.length).toBe(3);
   });
 
+  it('flattens a nested object to a pointer', function() {
+    var parent = new Item({
+      id: 'P',
+      type: 'Father',
+      child: new Item({ id: 'C' })
+    });
+
+    expect(flatten(parent)).toEqual({
+      id: new Id('Item', 'P'),
+      className: 'Item',
+      objectId: 'P',
+      type: 'Father',
+      child: {
+        __type: 'Pointer',
+        className: 'Item',
+        objectId: 'C'
+      }
+    });
+  });
+
   it('can flatten an array of objects', function() {
     var sandwich = [
       new Item({ id: 'Bread' }),
@@ -57,19 +77,19 @@ describe('flatten', function() {
     ];
     expect(flatten(sandwich)).toEqual([
       {
-        id: new Id('Item', 'Bread'),
+        __type: 'Pointer',
         className: 'Item',
         objectId: 'Bread'
       }, {
-        id: new Id('Item', 'Ham'),
+        __type: 'Pointer',
         className: 'Item',
         objectId: 'Ham'
       }, {
-        id: new Id('Item', 'Cheese'),
+        __type: 'Pointer',
         className: 'Item',
         objectId: 'Cheese'
       }, {
-        id: new Id('Item', 'MoreBread'),
+        __type: 'Pointer',
         className: 'Item',
         objectId: 'MoreBread'
       }
@@ -90,25 +110,15 @@ describe('flatten', function() {
       name: 'Larry',
       friends: [
         {
-          id: new Id('Item', 'O2'),
+          __type: 'Pointer',
           className: 'Item',
-          objectId: 'O2',
-          name: 'Moe'
+          objectId: 'O2'
         }, {
-          id: new Id('Item', 'O3'),
+          __type: 'Pointer',
           className: 'Item',
-          objectId: 'O3',
-          name: 'Curly'
+          objectId: 'O3'
         }
       ]
     });
-  });
-
-  it('detects circular dependencies', function() {
-    var A = new Item();
-    var B = new Item();
-    A.set('partner', B);
-    B.set('partner', A);
-    expect(flatten.bind(null, A)).toThrow();
   });
 });

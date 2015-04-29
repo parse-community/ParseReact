@@ -230,6 +230,152 @@ describe('Object storage', function() {
     });
   });
 
+  it('stores the results of inclusion queries', function() {
+    var Item = Parse.Object.extend('Item');
+    var results = [
+      new Item({
+        id: 'I1',
+        value: 11,
+        child: new Item({
+          id: 'I2',
+          value: 12
+        })
+      })
+    ];
+    var query = new Parse.Query(Item).include('child');
+    ObjectStore.storeQueryResults(results, query);
+    var expectedHash = queryHash(query);
+    var expectedSubscribers = {};
+    expectedSubscribers[expectedHash] = true;
+    expect(ObjectStore._rawStore).toEqual({
+      'Item:I1': {
+        data: {
+          id: new Id('Item', 'I1'),
+          className: 'Item',
+          objectId: 'I1',
+          value: 11,
+          child: {
+            __type: 'Pointer',
+            className: 'Item',
+            objectId: 'I2'
+          }
+        },
+        queries: expectedSubscribers
+      },
+      'Item:I2': {
+        data: {
+          id: new Id('Item', 'I2'),
+          className: 'Item',
+          objectId: 'I2',
+          value: 12
+        },
+        queries: {}
+      }
+    });
+    query.include('child.child');
+    results[0].get('child').set('child', new Item({ id: 'I3', value: 13 }));
+    ObjectStore.storeQueryResults(results, query);
+    expectedHash = queryHash(query);
+    expectedSubscribers[expectedHash] = true;
+    expect(ObjectStore._rawStore).toEqual({
+      'Item:I1': {
+        data: {
+          id: new Id('Item', 'I1'),
+          className: 'Item',
+          objectId: 'I1',
+          value: 11,
+          child: {
+            __type: 'Pointer',
+            className: 'Item',
+            objectId: 'I2'
+          }
+        },
+        queries: expectedSubscribers
+      },
+      'Item:I2': {
+        data: {
+          id: new Id('Item', 'I2'),
+          className: 'Item',
+          objectId: 'I2',
+          value: 12,
+          child: {
+            __type: 'Pointer',
+            className: 'Item',
+            objectId: 'I3'
+          }
+        },
+        queries: {}
+      },
+      'Item:I3': {
+        data: {
+          id: new Id('Item', 'I3'),
+          className: 'Item',
+          objectId: 'I3',
+          value: 13
+        },
+        queries: {}
+      }
+    });
+  });
+
+  it('fetches objects to fill pointer values', function() {
+    var Item = Parse.Object.extend('Item');
+    var results = [
+      new Item({
+        id: 'I1',
+        value: 11,
+        child: new Item({
+          id: 'I2',
+          value: 12
+        })
+      })
+    ];
+    var query = new Parse.Query(Item).include('child');
+    ObjectStore.storeQueryResults(results, query);
+    expect(ObjectStore.deepFetch(new Id('Item', 'I1'))).toEqual({
+      id: new Id('Item', 'I1'),
+      className: 'Item',
+      objectId: 'I1',
+      value: 11,
+      child: {
+        id: new Id('Item', 'I2'),
+        className: 'Item',
+        objectId: 'I2',
+        value: 12
+      }
+    });
+
+    var child = new Item({
+      id: 'I2',
+      value: 12
+    });
+    var parent = new Item({
+      id: 'I1',
+      value: 11,
+      child: child
+    });
+    child.set('parent', parent);
+    query = new Parse.Query(Item).include('child.parent');
+    ObjectStore.storeQueryResults([parent], query);
+    expect(ObjectStore.deepFetch(new Id('Item', 'I1'))).toEqual({
+      id: new Id('Item', 'I1'),
+      className: 'Item',
+      objectId: 'I1',
+      value: 11,
+      child: {
+        id: new Id('Item', 'I2'),
+        className: 'Item',
+        objectId: 'I2',
+        value: 12,
+        parent: {
+          __type: 'Pointer',
+          className: 'Item',
+          objectId: 'I1'
+        }
+      }
+    });
+  });
+
   it('can fetch multiple objects as shallow copies', function() {
     var Item = Parse.Object.extend('Item');
     var items = [
@@ -347,7 +493,7 @@ describe('Mutation storage', function() {
       id: id,
       name: 'Player 1'
     });
-    
+
     var updatedAt = new Date();
     ObjectStore.stackMutation(
       id,

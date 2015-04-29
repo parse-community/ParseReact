@@ -26,14 +26,22 @@ var Id = require('./Id');
 var Parse = require('./StubParse');
 var warning = require('./warning');
 
+function mappedFlatten(el) {
+  if (el instanceof Parse.Object) {
+    return {
+      __type: 'Pointer',
+      className: el.className,
+      objectId: el.id
+    }
+  }
+  return flatten(el);
+}
+
 /**
  * Convert a Parse Object or array of Parse Objects into a plain JS Object.
  */
 
-function flatten(object, seen) {
-  var mappedFlatten = function(el) {
-    return flatten(el, seen);
-  };
+function flatten(object) {
   if (Array.isArray(object)) {
     return object.map(mappedFlatten);
   }
@@ -41,11 +49,7 @@ function flatten(object, seen) {
     warning('Attempted to flatten something that is not a Parse Object');
     return object;
   }
-  if (!Array.isArray(seen)) {
-    seen = [];
-  }
 
-  seen.push(object);
   var flat = {
     id: new Id(object.className, object.id),
     className: object.className,
@@ -60,10 +64,8 @@ function flatten(object, seen) {
   for (var attr in object.attributes) {
     var val = object.attributes[attr];
     if (val instanceof Parse.Object) {
-      if (seen.indexOf(val) > -1) {
-        throw new Error('Cannot flatten circular reference');
-      }
-      flat[attr] = flatten(val, seen);
+      // We replace it with a pointer
+      flat[attr] = mappedFlatten(val);
     } else if (Array.isArray(val)) {
       flat[attr] = val.map(mappedFlatten);
     } else {

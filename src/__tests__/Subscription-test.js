@@ -359,20 +359,4 @@ describe('Subscription', function() {
       ]
     });
   });
-
-  it("honors the original query 'limit'", function() {
-    var q = (new Parse.Query('Item')).limit(2);
-    var sub = new Subscription(q);
-    sub.issueQuery = jest.genMockFn();
-
-    var cb = jest.genMockFn();
-    sub.addSubscriber(cb, 'items');
-
-    sub.pushData();
-
-    sub.addResult({ id: new Id('Item', 'I1') });
-    sub.addResult({ id: new Id('Item', 'I2') });
-    sub.addResult({ id: new Id('Item', 'I3') });
-    expect(cb.mock.calls[3][1].length).toBe(2);
-  });
 });

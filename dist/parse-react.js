@@ -436,7 +436,7 @@ var Mixin = {
   componentWillUpdate: function componentWillUpdate(nextProps, nextState) {
     // only subscribe if props or state changed
     if (nextProps !== this.props || nextState !== this.state) {
-      this._subscribe();
+      this._subscribe(nextProps, nextState);
     }
   },
 
@@ -1131,7 +1131,11 @@ function storeObject(data) {
   if (!(data.id instanceof Id)) {
     throw new Error('Cannot store an object without an Id');
   }
-  store[data.id] = { data: data, queries: {} };
+  var queries = {};
+  if (store[data.id]) {
+    queries = store[data.id].queries;
+  }
+  store[data.id] = { data: data, queries: queries };
   return data.id;
 }
 /**
@@ -1346,10 +1350,26 @@ function storeQueryResults(results, query) {
       orderColumns[column] = true;
     }
   }
+  var includes = [];
+  if (query._include.length) {
+    for (i = 0; i < query._include.length; i++) {
+      includes.push(query._include[i].split('.'));
+    }
+  }
   var ids = [];
   for (i = 0; i < results.length; i++) {
     var flat = flatten(results[i]);
     var id = storeObject(flat);
+    if (includes.length) {
+      for (var inclusion = 0; inclusion < includes.length; inclusion++) {
+        var inclusionChain = includes[inclusion];
+        var cur = results[i];
+        for (var col = 0; col < inclusionChain.length; col++) {
+          cur = cur.get(inclusionChain[col]);
+          storeObject(flatten(cur));
+        }
+      }
+    }
     var resultItem = id;
     if (orderColumns) {
       // Fetch and store ordering info
@@ -1390,6 +1410,32 @@ function getDataForIds(ids) {
 }
 
 /**
+ * Fetch objects from the store, converting pointers to objects where possible
+ */
+function deepFetch(id, seen) {
+  if (!store[id]) {
+    return null;
+  }
+  if (typeof seen === 'undefined') {
+    seen = [id.toString()];
+  }
+  var source = store[id].data;
+  var obj = {};
+  for (var attr in source) {
+    var sourceVal = source[attr];
+    if (sourceVal.__type === 'Pointer') {
+      var childId = new Id(sourceVal.className, sourceVal.objectId);
+      if (seen.indexOf(childId.toString()) < 0 && store[childId]) {
+        seen = seen.concat([childId.toString()]);
+        sourceVal = deepFetch(childId, seen);
+      }
+    }
+    obj[attr] = sourceVal;
+  }
+  return obj;
+}
+
+/**
  * Calculate the result of applying all Mutations to an object.
  */
 function getLatest(id) {
@@ -1411,7 +1457,7 @@ function getLatest(id) {
       return base;
     }
     if (store[id]) {
-      var source = store[id].data;
+      var source = deepFetch(id);
       for (attr in source) {
         base[attr] = source[attr];
       }
@@ -1427,7 +1473,7 @@ function getLatest(id) {
     return base;
   }
   // If there are no mutations, just return the stored object
-  return store[id] ? store[id].data : null;
+  return store[id] ? deepFetch(id) : null;
 }
 
 var ObjectStore = {
@@ -1442,6 +1488,7 @@ var ObjectStore = {
   commitDelta: commitDelta,
   storeQueryResults: storeQueryResults,
   getDataForIds: getDataForIds,
+  deepFetch: deepFetch,
   getLatest: getLatest
 };
 
@@ -2621,14 +2668,22 @@ var Id = _dereq_('./Id');
 var Parse = _dereq_('./StubParse');
 var warning = _dereq_('./warning');
 
+function mappedFlatten(el) {
+  if (el instanceof Parse.Object) {
+    return {
+      __type: 'Pointer',
+      className: el.className,
+      objectId: el.id
+    };
+  }
+  return flatten(el);
+}
+
 /**
  * Convert a Parse Object or array of Parse Objects into a plain JS Object.
  */
 
-function flatten(object, seen) {
-  var mappedFlatten = function mappedFlatten(el) {
-    return flatten(el, seen);
-  };
+function flatten(object) {
   if (Array.isArray(object)) {
     return object.map(mappedFlatten);
   }
@@ -2636,11 +2691,7 @@ function flatten(object, seen) {
     warning('Attempted to flatten something that is not a Parse Object');
     return object;
   }
-  if (!Array.isArray(seen)) {
-    seen = [];
-  }
 
-  seen.push(object);
   var flat = {
     id: new Id(object.className, object.id),
     className: object.className,
@@ -2655,10 +2706,8 @@ function flatten(object, seen) {
   for (var attr in object.attributes) {
     var val = object.attributes[attr];
     if (val instanceof Parse.Object) {
-      if (seen.indexOf(val) > -1) {
-        throw new Error('Cannot flatten circular reference');
-      }
-      flat[attr] = flatten(val, seen);
+      // We replace it with a pointer
+      flat[attr] = mappedFlatten(val);
     } else if (Array.isArray(val)) {
       flat[attr] = val.map(mappedFlatten);
     } else {
