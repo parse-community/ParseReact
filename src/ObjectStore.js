@@ -303,7 +303,9 @@ function storeQueryResults(results, query): Array<Id | { id: Id; ordering: any }
         var cur = results[i];
         for (var col = 0; cur && col < inclusionChain.length; col++) {
           cur = cur.get(inclusionChain[col]);
-          storeObject(flatten(cur));
+          if (cur) {
+            storeObject(flatten(cur));
+          }
         }
       }
     }
