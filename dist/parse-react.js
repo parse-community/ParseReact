@@ -1364,7 +1364,7 @@ function storeQueryResults(results, query) {
       for (var inclusion = 0; inclusion < includes.length; inclusion++) {
         var inclusionChain = includes[inclusion];
         var cur = results[i];
-        for (var col = 0; col < inclusionChain.length; col++) {
+        for (var col = 0; cur && col < inclusionChain.length; col++) {
           cur = cur.get(inclusionChain[col]);
           storeObject(flatten(cur));
         }
