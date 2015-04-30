@@ -98,7 +98,7 @@ function getSubscription(hash: string): ?Subscription {
  * Indexes a query by the fields it depends upon. This lets us quickly find a
  * query that might match an object that has just modified a specific field.
  */
-function indexQuery(query, hash) {
+function indexQuery(query: ParseQuery, hash: string) {
   var fields = keysFromHash(hash).keys;
   if (fields.length < 1) {
     fields = ['']; // Empty string is the key for no WHERE conditions

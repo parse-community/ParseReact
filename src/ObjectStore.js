@@ -40,11 +40,15 @@ var queryHash = require('./QueryTools').queryHash;
 
 // Stores the last known true state of each object, as well as the hashes of
 // queries subscribed to the object.
-var store: { [id: Id]:
-  { data: any; queries: { [hash: string]: boolean } } } = {};
+var store: {
+  [id: Id]: {
+    data: { [attr: string]: any };
+    queries: { [hash: string]: boolean }
+  }
+} = {};
 
 // Stores the queries subscribed to local-only objects
-var localSubscribers = {};
+var localSubscribers: { [id: Id]: { [hash: string]: boolean } } = {};
 
 // Stores a stack of pending mutations for each object
 var pendingMutations: { [id: Id]: Array<{
@@ -62,7 +66,7 @@ var mutationCount = 0;
  * storeObject: takes a flattened object as the single argument, and places it
  * in the Store, indexed by its Id.
  */
-function storeObject(data): Id {
+function storeObject(data: { [attr: string]: any }): Id {
   if (!(data.id instanceof Id)) {
     throw new Error('Cannot store an object without an Id');
   }
@@ -270,7 +274,8 @@ function commitDelta(delta: Delta):
  * Returns an array of object Ids, or an array of maps containing Ids and query-
  * specific ordering information.
  */
-function storeQueryResults(results, query): Array<Id | { id: Id; ordering: any }> {
+function storeQueryResults(results: Array<ParseObject> | ParseObject, query: ParseQuery):
+    Array<Id | { id: Id; ordering: any }> {
   var hash = queryHash(query);
   if (!Array.isArray(results)) {
     results = [results];
@@ -362,7 +367,7 @@ function deepFetch(id: Id, seen?: Array<string>) {
   var obj = {};
   for (var attr in source) {
     var sourceVal = source[attr];
-    if (sourceVal.__type === 'Pointer') {
+    if (typeof sourceVal === 'object' && sourceVal.__type === 'Pointer') {
       var childId = new Id(sourceVal.className, sourceVal.objectId);
       if (seen.indexOf(childId.toString()) < 0 && store[childId]) {
         seen = seen.concat([childId.toString()]);

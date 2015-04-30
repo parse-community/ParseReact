@@ -18,6 +18,7 @@
  *  FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
  *  IN THE SOFTWARE.
  *
+ *  @flow
  */
 
 'use strict';
@@ -50,12 +51,12 @@ function flattenOrQueries(where) {
 /**
  * Deterministically turns an object into a string. Disregards ordering
  */
-function stringify(object) {
+function stringify(object): string {
   if (typeof object !== 'object') {
     if (typeof object === 'string') {
       return '"' + object.replace(/\|/g, '%|') + '"';
     }
-    return object;
+    return object + '';
   }
   if (Array.isArray(object)) {
     var copy = object.map(stringify);
@@ -75,12 +76,12 @@ function stringify(object) {
  * Generate a hash from a query, with unique fields for columns, values, order,
  * skip, and limit.
  */
-function queryHash(query) {
+function queryHash(query: ParseQuery): string {
   if (!(query instanceof Parse.Query)) {
     throw new TypeError('Only a Parse Query can be hashed');
   }
   var where = flattenOrQueries(query._where || {});
-  var columns;
+  var columns = [];
   var values = [];
   var i;
   if (Array.isArray(where)) {
@@ -120,7 +121,8 @@ function queryHash(query) {
 /**
  * Extracts the className and keys from a query hash
  */
-function keysFromHash(hash) {
+function keysFromHash(hash: string):
+    { className: string; keys: Array<string> } {
   var classNameSplit = hash.indexOf(':');
   var className = hash.substring(0, classNameSplit);
 
@@ -142,7 +144,9 @@ function keysFromHash(hash) {
  * Since we find queries that match objects, rather than objects that match
  * queries, we can avoid building a full-blown query tool.
  */
-function matchesQuery(object, query) {
+function matchesQuery(
+    object: { [key: string]: any },
+    query: ParseQuery | { [key: string]: any }): boolean {
   if (query instanceof Parse.Query) {
     var className =
       (object.id instanceof Id) ? object.id.className : object.className;
