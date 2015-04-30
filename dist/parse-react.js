@@ -142,6 +142,8 @@ var Delta = (function () {
   function Delta(id, data, options) {
     _classCallCheck(this, Delta);
 
+    this.__initializeProperties();
+
     if (!(id instanceof Id)) {
       throw new TypeError('Cannot create a Delta with an invalid target Id');
     }
@@ -160,18 +162,6 @@ var Delta = (function () {
   }
 
   _createClass(Delta, [{
-    key: 'id',
-    value: undefined,
-    enumerable: true
-  }, {
-    key: 'map',
-    value: undefined,
-    enumerable: true
-  }, {
-    key: 'destroy',
-    value: undefined,
-    enumerable: true
-  }, {
     key: 'merge',
 
     /**
@@ -196,6 +186,13 @@ var Delta = (function () {
       }
 
       return this;
+    }
+  }, {
+    key: '__initializeProperties',
+    value: function __initializeProperties() {
+      this.id = undefined;
+      this.map = undefined;
+      this.destroy = undefined;
     }
   }]);
 
@@ -244,22 +241,22 @@ var Id = (function () {
   function Id(className, objectId) {
     _classCallCheck(this, Id);
 
+    this.__initializeProperties();
+
     this.className = className;
     this.objectId = objectId;
   }
 
   _createClass(Id, [{
-    key: 'className',
-    value: undefined,
-    enumerable: true
-  }, {
-    key: 'objectId',
-    value: undefined,
-    enumerable: true
-  }, {
     key: 'toString',
     value: function toString() {
       return this.className + ':' + this.objectId;
+    }
+  }, {
+    key: '__initializeProperties',
+    value: function __initializeProperties() {
+      this.className = undefined;
+      this.objectId = undefined;
     }
   }], [{
     key: 'fromString',
@@ -629,24 +626,14 @@ var Mutation = (function () {
   function Mutation(action, target, data) {
     _classCallCheck(this, Mutation);
 
+    this.__initializeProperties();
+
     this.action = action;
     this.target = target;
     this.data = data;
   }
 
   _createClass(Mutation, [{
-    key: 'action',
-    value: undefined,
-    enumerable: true
-  }, {
-    key: 'target',
-    value: undefined,
-    enumerable: true
-  }, {
-    key: 'data',
-    value: undefined,
-    enumerable: true
-  }, {
     key: 'dispatch',
     value: function dispatch(options) {
       if (this.action === 'NOOP') {
@@ -740,6 +727,13 @@ var Mutation = (function () {
         }
       }
       return new Delta(id, changes);
+    }
+  }, {
+    key: '__initializeProperties',
+    value: function __initializeProperties() {
+      this.action = undefined;
+      this.target = undefined;
+      this.data = undefined;
     }
   }]);
 
@@ -1425,7 +1419,7 @@ function deepFetch(id, seen) {
   var obj = {};
   for (var attr in source) {
     var sourceVal = source[attr];
-    if (sourceVal.__type === 'Pointer') {
+    if (typeof sourceVal !== 'undefined' && sourceVal.__type === 'Pointer') {
       var childId = new Id(sourceVal.className, sourceVal.objectId);
       if (seen.indexOf(childId.toString()) < 0 && store[childId]) {
         seen = seen.concat([childId.toString()]);
@@ -2023,6 +2017,12 @@ var Subscription = (function () {
   function Subscription(query) {
     _classCallCheck(this, Subscription);
 
+    this.originalQuery = undefined;
+    this.pending = undefined;
+    this.subscribers = undefined;
+    this.resultSet = undefined;
+    this.observationCount = undefined;
+
     // The query used to fetch results for this Subscription
     this.originalQuery = query;
     // Whether there is an outstanding AJAX request for results
@@ -2038,26 +2038,6 @@ var Subscription = (function () {
   }
 
   _createClass(Subscription, [{
-    key: 'originalQuery',
-    value: undefined,
-    enumerable: true
-  }, {
-    key: 'pending',
-    value: undefined,
-    enumerable: true
-  }, {
-    key: 'subscribers',
-    value: undefined,
-    enumerable: true
-  }, {
-    key: 'resultSet',
-    value: undefined,
-    enumerable: true
-  }, {
-    key: 'observationCount',
-    value: undefined,
-    enumerable: true
-  }, {
     key: 'addSubscriber',
 
     /**
