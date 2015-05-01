@@ -1,6 +1,6 @@
 /*
  *  Parse + React
- *  v0.2.3
+ *  v0.2.4
  */
 (function(f){if(typeof exports==="object"&&typeof module!=="undefined"){module.exports=f()}else if(typeof define==="function"&&define.amd){define([],f)}else{var g;if(typeof window!=="undefined"){g=window}else if(typeof global!=="undefined"){g=global}else if(typeof self!=="undefined"){g=self}else{g=this}g.ParseReact = f()}})(function(){var define,module,exports;return (function e(t,n,r){function s(o,u){if(!n[o]){if(!t[o]){var a=typeof require=="function"&&require;if(!u&&a)return a(o,!0);if(i)return i(o,!0);var f=new Error("Cannot find module '"+o+"'");throw f.code="MODULE_NOT_FOUND",f}var l=n[o]={exports:{}};t[o][0].call(l.exports,function(e){var n=t[o][1][e];return s(n?n:e)},l,l.exports,e,t,n,r)}return n[o].exports}var i=typeof require=="function"&&require;for(var o=0;o<r.length;o++)s(r[o]);return s})({1:[function(_dereq_,module,exports){
 /*
@@ -142,6 +142,8 @@ var Delta = (function () {
   function Delta(id, data, options) {
     _classCallCheck(this, Delta);
 
+    this.__initializeProperties();
+
     if (!(id instanceof Id)) {
       throw new TypeError('Cannot create a Delta with an invalid target Id');
     }
@@ -160,18 +162,6 @@ var Delta = (function () {
   }
 
   _createClass(Delta, [{
-    key: 'id',
-    value: undefined,
-    enumerable: true
-  }, {
-    key: 'map',
-    value: undefined,
-    enumerable: true
-  }, {
-    key: 'destroy',
-    value: undefined,
-    enumerable: true
-  }, {
     key: 'merge',
 
     /**
@@ -196,6 +186,13 @@ var Delta = (function () {
       }
 
       return this;
+    }
+  }, {
+    key: '__initializeProperties',
+    value: function __initializeProperties() {
+      this.id = undefined;
+      this.map = undefined;
+      this.destroy = undefined;
     }
   }]);
 
@@ -244,22 +241,22 @@ var Id = (function () {
   function Id(className, objectId) {
     _classCallCheck(this, Id);
 
+    this.__initializeProperties();
+
     this.className = className;
     this.objectId = objectId;
   }
 
   _createClass(Id, [{
-    key: 'className',
-    value: undefined,
-    enumerable: true
-  }, {
-    key: 'objectId',
-    value: undefined,
-    enumerable: true
-  }, {
     key: 'toString',
     value: function toString() {
       return this.className + ':' + this.objectId;
+    }
+  }, {
+    key: '__initializeProperties',
+    value: function __initializeProperties() {
+      this.className = undefined;
+      this.objectId = undefined;
     }
   }], [{
     key: 'fromString',
@@ -629,24 +626,14 @@ var Mutation = (function () {
   function Mutation(action, target, data) {
     _classCallCheck(this, Mutation);
 
+    this.__initializeProperties();
+
     this.action = action;
     this.target = target;
     this.data = data;
   }
 
   _createClass(Mutation, [{
-    key: 'action',
-    value: undefined,
-    enumerable: true
-  }, {
-    key: 'target',
-    value: undefined,
-    enumerable: true
-  }, {
-    key: 'data',
-    value: undefined,
-    enumerable: true
-  }, {
     key: 'dispatch',
     value: function dispatch(options) {
       if (this.action === 'NOOP') {
@@ -740,6 +727,13 @@ var Mutation = (function () {
         }
       }
       return new Delta(id, changes);
+    }
+  }, {
+    key: '__initializeProperties',
+    value: function __initializeProperties() {
+      this.action = undefined;
+      this.target = undefined;
+      this.data = undefined;
     }
   }]);
 
@@ -1425,7 +1419,7 @@ function deepFetch(id, seen) {
   var obj = {};
   for (var attr in source) {
     var sourceVal = source[attr];
-    if (sourceVal.__type === 'Pointer') {
+    if (typeof sourceVal === 'object' && sourceVal.__type === 'Pointer') {
       var childId = new Id(sourceVal.className, sourceVal.objectId);
       if (seen.indexOf(childId.toString()) < 0 && store[childId]) {
         seen = seen.concat([childId.toString()]);
@@ -1620,6 +1614,7 @@ module.exports = ParsePatches;
  *  FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
  *  IN THE SOFTWARE.
  *
+ *  @flow
  */
 
 'use strict';
@@ -1657,7 +1652,7 @@ function stringify(object) {
     if (typeof object === 'string') {
       return '"' + object.replace(/\|/g, '%|') + '"';
     }
-    return object;
+    return object + '';
   }
   if (Array.isArray(object)) {
     var copy = object.map(stringify);
@@ -1682,7 +1677,7 @@ function queryHash(query) {
     throw new TypeError('Only a Parse Query can be hashed');
   }
   var where = flattenOrQueries(query._where || {});
-  var columns;
+  var columns = [];
   var values = [];
   var i;
   if (Array.isArray(where)) {
@@ -2023,6 +2018,12 @@ var Subscription = (function () {
   function Subscription(query) {
     _classCallCheck(this, Subscription);
 
+    this.originalQuery = undefined;
+    this.pending = undefined;
+    this.subscribers = undefined;
+    this.resultSet = undefined;
+    this.observationCount = undefined;
+
     // The query used to fetch results for this Subscription
     this.originalQuery = query;
     // Whether there is an outstanding AJAX request for results
@@ -2038,26 +2039,6 @@ var Subscription = (function () {
   }
 
   _createClass(Subscription, [{
-    key: 'originalQuery',
-    value: undefined,
-    enumerable: true
-  }, {
-    key: 'pending',
-    value: undefined,
-    enumerable: true
-  }, {
-    key: 'subscribers',
-    value: undefined,
-    enumerable: true
-  }, {
-    key: 'resultSet',
-    value: undefined,
-    enumerable: true
-  }, {
-    key: 'observationCount',
-    value: undefined,
-    enumerable: true
-  }, {
     key: 'addSubscriber',
 
     /**

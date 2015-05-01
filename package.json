@@ -1,15 +1,21 @@
 {
   "name": "parse-react",
-  "version": "0.2.3",
+  "version": "0.2.4",
   "description": "Use Parse data in React applications",
   "homepage": "https://github.com/ParsePlatform/ParseReact",
+  "keywords": [
+    "parse",
+    "react",
+    "data",
+    "api",
+    "observable"
+  ],
   "repository": {
     "type": "git",
     "url": "https://github.com/ParsePlatform/ParseReact"
   },
+  "bugs": "https://github.com/ParsePlatform/ParseReact/issues",
   "files": [
-    "dist/",
-    "src/",
     "lib/",
     "LICENSE",
     "README.md"
