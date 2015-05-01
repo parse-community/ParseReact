@@ -160,18 +160,23 @@ function pushUpdates(subscribers: Array<string>, changes: { id: Id; latest: any;
   for (i = 0; i < subscribers.length; i++) {
     visited[subscribers[i]] = true;
     subscriber = SubscriptionManager.getSubscription(subscribers[i]);
-    if (QueryTools.matchesQuery(changes.latest, subscriber.originalQuery)) {
-      if (changes.id.toString() !== changes.latest.id.toString()) {
-        // It's a Create method
-        subscriber.removeResult(changes.id, true);
-        ObjectStore.removeSubscriber(changes.id, subscribers[i]);
-        subscriber.addResult(changes.latest);
-        ObjectStore.addSubscriber(changes.latest.id, subscribers[i]);
+    if (subscriber !== null) {
+      if (QueryTools.matchesQuery(changes.latest, subscriber.originalQuery)) {
+        if (changes.id.toString() !== changes.latest.id.toString()) {
+          // It's a Create method
+          subscriber.removeResult(changes.id, true);
+          ObjectStore.removeSubscriber(changes.id, subscribers[i]);
+          subscriber.addResult(changes.latest);
+          ObjectStore.addSubscriber(changes.latest.id, subscribers[i]);
+        } else {
+          subscriber.pushData();
+        }
       } else {
-        subscriber.pushData();
+        subscriber.removeResult(changes.id);
+        ObjectStore.removeSubscriber(changes.id, subscribers[i]);
       }
-    } else {
-      subscriber.removeResult(changes.id);
+    }else{
+      // Not defined: ghost subscription in the ObjectStore
       ObjectStore.removeSubscriber(changes.id, subscribers[i]);
     }
   }
