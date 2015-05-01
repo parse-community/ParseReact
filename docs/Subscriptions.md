@@ -56,27 +56,25 @@ observe: function() {
   };
 }
 ```
-# Subscribing to Relational Parse Data
-To subscribe to Parse data that necessitates a relational query simply create a
-function that builds a relational query and return that query to your observe function.
+# Subscribing to Complex Queries
+Not all queries can be written in a single line of code.  To effectively subscribe a component to a complex Parse query it is recommended that you build them inside the observe method before constructing and returning your map of observations.  
 
 ```js
-observe: function(){
-  var self = this;
-  return {
-    relational_data: (self.getRelationalData()) 
-  }
-},
-getRelationalData: function(){
-  //Build your relational query and return it
-  var Post = Parse.Object.extend("Post");
-  var Comment = Parse.Object.extend("Comment");
-  
-  var innerQuery = new Parse.Query(Post);
-  innerQuery.exists("image");
-  
-  var query = new Parse.Query(Comment);
-  query.matchesQuery("post", innerQuery);
-  return query;
-}
-```
+observe: function() {
+    var userQuery = new Parse.Query(Parse.User);
+    userQuery.equalTo("objectId", id);
+
+    var Comments = Parse.Object.extend("Comments");
+
+    var commentQuery = new Parse.Query(Comments);
+    commentQuery.matchesQuery("user_reference", userQuery);
+    activityQuery.include("comment");
+    commentQuery.descending("createdAt");
+
+    return {
+    	comments: commentQuery
+    };
+ }
+ ```
+
+The example above illustrates the need for multiple lines of code being used to create your map of observations.  The first query is setup to find a specific user based upon their ```objectId```. The second query is setup to match all of the comments for the user that will be returned in the first query.  The result of this relational query is then returned and associated with the name ```comments```.
