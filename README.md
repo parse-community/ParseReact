@@ -2,6 +2,8 @@
 
 Seamlessly bringing Parse data into your React applications.
 
+[![Build Status](https://travis-ci.org/ParsePlatform/ParseReact.svg?branch=master)](https://travis-ci.org/ParsePlatform/ParseReact)
+
 ## Overview
 
 Parse + React is an interface layer on top of the
