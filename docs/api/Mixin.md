@@ -9,7 +9,7 @@ At mount time, the initial `props` and `state` are passed as function parameters
 Each successive time, the upcoming `props` and `state` are passed as parameters.
 This is because the method is called from `componentWillUpdate`.
 This method should return an object of key/value pairs, where each key denotes
-the name of a subscription, and each key is a Parse Query or
+the name of a subscription, and each value is a Parse Query or
 [Local Subscription](/docs/api/LocalSubscriptions.md).
 
 Additionally, it adds the following methods to the component:
