@@ -40,7 +40,6 @@ var TodoList = React.createClass({
   },
 
   render: function() {
-    var self = this;
     // If a query is outstanding, this.props.queryPending will be true
     // We can use this to display a loading indicator
     return (
@@ -50,9 +49,9 @@ var TodoList = React.createClass({
           // Loop over the objects returned by the items query, rendering them
           // with TodoItem components.
           return (
-            <TodoItem key={i.id} item={i} update={self._updateItem} destroy={self._destroyItem} />
+            <TodoItem key={i.id} item={i} update={this._updateItem} destroy={this._destroyItem} />
           );
-        })}
+        }, this)}
         <TodoCreator submit={this._createItem} />
       </div>
     );
