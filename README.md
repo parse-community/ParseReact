@@ -86,7 +86,7 @@ loading the Parse + React library:
 ```html
 <html>
   <head>
-    <script src="http://fb.me/react-0.13.1.min.js"></script>
+    <script src="http://fb.me/react-0.13.3.min.js"></script>
     <script src="https://www.parsecdn.com/js/parse-latest.js"></script>
     <!-- Now include parse-react.js -->
     <script src="https://www.parsecdn.com/js/parse-react.js"></script>
