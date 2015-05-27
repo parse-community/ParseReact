@@ -93,7 +93,7 @@ var TodoItem = React.createClass({
     if (this.state.editText) {
       this.props.update(this.props.item.id, this.state.editText);
       this.setState({
-      editing: false
+        editing: false
       });
     } else {
       this.props.destroy(this.props.item.id);
