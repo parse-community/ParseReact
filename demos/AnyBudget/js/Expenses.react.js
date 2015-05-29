@@ -44,7 +44,6 @@ var Expenses = React.createClass({
   },
 
   render: function() {
-    var self = this;
     var content = (
       <div className='emptyTable'>
         <h2>You have no expenses this month!</h2>
@@ -63,19 +62,19 @@ var Expenses = React.createClass({
                 <select
                   className='expenseCategory'
                   value={ex.category}
-                  onChange={self.recategorize.bind(self, ex)}>
+                  onChange={this.recategorize.bind(this, ex)}>
                   {Categories.map(function(c, i) {
                     return i ? <option key={c} value={c}>{c}</option> : null;
                   })}
                 </select>
                 <a
                   className='delete'
-                  onClick={self.deleteExpense.bind(self, ex)}>
+                  onClick={this.deleteExpense.bind(this, ex)}>
                   &times;
                 </a>
               </div>
             );
-          })}
+          }, this)}
         </div>
       );
     } else if (this.pendingQueries().length) {
