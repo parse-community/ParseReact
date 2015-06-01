@@ -367,7 +367,7 @@ function deepFetch(id: Id, seen?: Array<string>) {
   var obj = {};
   for (var attr in source) {
     var sourceVal = source[attr];
-    if (typeof sourceVal === 'object' && sourceVal.__type === 'Pointer') {
+    if ( sourceVal && typeof sourceVal === 'object' && sourceVal.__type === 'Pointer') {
       var childId = new Id(sourceVal.className, sourceVal.objectId);
       if (seen.indexOf(childId.toString()) < 0 && store[childId]) {
         seen = seen.concat([childId.toString()]);
