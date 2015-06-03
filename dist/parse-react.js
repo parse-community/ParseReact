@@ -1,6 +1,6 @@
 /*
  *  Parse + React
- *  v0.2.4
+ *  v0.3.0
  */
 (function(f){if(typeof exports==="object"&&typeof module!=="undefined"){module.exports=f()}else if(typeof define==="function"&&define.amd){define([],f)}else{var g;if(typeof window!=="undefined"){g=window}else if(typeof global!=="undefined"){g=global}else if(typeof self!=="undefined"){g=self}else{g=this}g.ParseReact = f()}})(function(){var define,module,exports;return (function e(t,n,r){function s(o,u){if(!n[o]){if(!t[o]){var a=typeof require=="function"&&require;if(!u&&a)return a(o,!0);if(i)return i(o,!0);var f=new Error("Cannot find module '"+o+"'");throw f.code="MODULE_NOT_FOUND",f}var l=n[o]={exports:{}};t[o][0].call(l.exports,function(e){var n=t[o][1][e];return s(n?n:e)},l,l.exports,e,t,n,r)}return n[o].exports}var i=typeof require=="function"&&require;for(var o=0;o<r.length;o++)s(r[o]);return s})({1:[function(_dereq_,module,exports){
 /*
@@ -124,9 +124,9 @@ process.umask = function() { return 0; };
 
 'use strict';
 
-var _classCallCheck = function (instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError('Cannot call a class as a function'); } };
-
 var _createClass = (function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ('value' in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; })();
+
+function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError('Cannot call a class as a function'); } }
 
 var Id = _dereq_('./Id');
 
@@ -141,8 +141,6 @@ var Id = _dereq_('./Id');
 var Delta = (function () {
   function Delta(id, data, options) {
     _classCallCheck(this, Delta);
-
-    this.__initializeProperties();
 
     if (!(id instanceof Id)) {
       throw new TypeError('Cannot create a Delta with an invalid target Id');
@@ -187,13 +185,6 @@ var Delta = (function () {
 
       return this;
     }
-  }, {
-    key: '__initializeProperties',
-    value: function __initializeProperties() {
-      this.id = undefined;
-      this.map = undefined;
-      this.destroy = undefined;
-    }
   }]);
 
   return Delta;
@@ -227,9 +218,9 @@ module.exports = Delta;
 
 'use strict';
 
-var _classCallCheck = function (instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError('Cannot call a class as a function'); } };
-
 var _createClass = (function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ('value' in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; })();
+
+function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError('Cannot call a class as a function'); } }
 
 /**
  * Id is used internally to provide a unique identifier for a specific Parse
@@ -241,8 +232,6 @@ var Id = (function () {
   function Id(className, objectId) {
     _classCallCheck(this, Id);
 
-    this.__initializeProperties();
-
     this.className = className;
     this.objectId = objectId;
   }
@@ -251,12 +240,6 @@ var Id = (function () {
     key: 'toString',
     value: function toString() {
       return this.className + ':' + this.objectId;
-    }
-  }, {
-    key: '__initializeProperties',
-    value: function __initializeProperties() {
-      this.className = undefined;
-      this.objectId = undefined;
     }
   }], [{
     key: 'fromString',
@@ -564,9 +547,9 @@ module.exports = Mixin;
 
 'use strict';
 
-var _classCallCheck = function (instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError('Cannot call a class as a function'); } };
-
 var _createClass = (function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ('value' in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; })();
+
+function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError('Cannot call a class as a function'); } }
 
 var Delta = _dereq_('./Delta');
 var Id = _dereq_('./Id');
@@ -625,8 +608,6 @@ function validateFields(data) {
 var Mutation = (function () {
   function Mutation(action, target, data) {
     _classCallCheck(this, Mutation);
-
-    this.__initializeProperties();
 
     this.action = action;
     this.target = target;
@@ -727,13 +708,6 @@ var Mutation = (function () {
         }
       }
       return new Delta(id, changes);
-    }
-  }, {
-    key: '__initializeProperties',
-    value: function __initializeProperties() {
-      this.action = undefined;
-      this.target = undefined;
-      this.data = undefined;
     }
   }]);
 
@@ -1419,7 +1393,7 @@ function deepFetch(id, seen) {
   var obj = {};
   for (var attr in source) {
     var sourceVal = source[attr];
-    if (typeof sourceVal === 'object' && sourceVal.__type === 'Pointer') {
+    if (sourceVal && typeof sourceVal === 'object' && sourceVal.__type === 'Pointer') {
       var childId = new Id(sourceVal.className, sourceVal.objectId);
       if (seen.indexOf(childId.toString()) < 0 && store[childId]) {
         seen = seen.concat([childId.toString()]);
@@ -1736,10 +1710,10 @@ function matchesQuery(_x, _x2) {
   var _again = true;
 
   _function: while (_again) {
-    className = field = undefined;
-    _again = false;
     var object = _x,
         query = _x2;
+    className = field = undefined;
+    _again = false;
 
     if (query instanceof Parse.Query) {
       var className = object.id instanceof Id ? object.id.className : object.className;
@@ -1965,9 +1939,9 @@ if (typeof Parse === 'undefined') {
 
 'use strict';
 
-var _classCallCheck = function (instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError('Cannot call a class as a function'); } };
-
 var _createClass = (function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ('value' in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; })();
+
+function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError('Cannot call a class as a function'); } }
 
 var Id = _dereq_('./Id');
 var ObjectStore = _dereq_('./ObjectStore');
@@ -2017,12 +1991,6 @@ function compareObjectOrder(queryOrder, object, orderInfo) {
 var Subscription = (function () {
   function Subscription(query) {
     _classCallCheck(this, Subscription);
-
-    this.originalQuery = undefined;
-    this.pending = undefined;
-    this.subscribers = undefined;
-    this.resultSet = undefined;
-    this.observationCount = undefined;
 
     // The query used to fetch results for this Subscription
     this.originalQuery = query;
@@ -2352,20 +2320,6 @@ module.exports = SubscriptionManager;
 
 }).call(this,_dereq_('_process'))
 },{"./QueryTools":11,"./Subscription":13,"_process":2}],15:[function(_dereq_,module,exports){
-'use strict';
-
-Object.defineProperty(exports, '__esModule', {
-  value: true
-});
-
-/**
- * issueMutation performs two important actions: it optimistically applies a
- * Mutation to the current local state (if this option is not turned off), and
- * issues the Mutation to the server. If the server request is successful, the
- * changes are committed to the local state; if not, the optimistic changes are
- * rolled back.
- */
-exports.issueMutation = issueMutation;
 /*
  *  Copyright (c) 2015, Parse, LLC. All rights reserved.
  *
@@ -2391,6 +2345,11 @@ exports.issueMutation = issueMutation;
 
 'use strict';
 
+Object.defineProperty(exports, '__esModule', {
+  value: true
+});
+exports.issueMutation = issueMutation;
+
 var Delta = _dereq_('./Delta');
 var Id = _dereq_('./Id');
 var LocalSubscriptions = _dereq_('./LocalSubscriptions');
@@ -2401,6 +2360,15 @@ var QueryTools = _dereq_('./QueryTools');
 var SubscriptionManager = _dereq_('./SubscriptionManager');
 
 var localCount = 0;
+
+/**
+ * issueMutation performs two important actions: it optimistically applies a
+ * Mutation to the current local state (if this option is not turned off), and
+ * issues the Mutation to the server. If the server request is successful, the
+ * changes are committed to the local state; if not, the optimistic changes are
+ * rolled back.
+ */
+
 function issueMutation(mutation, options) {
   var executionId;
   var target = mutation.target instanceof Id ? mutation.target : new Id(mutation.target, 'local-' + localCount++);

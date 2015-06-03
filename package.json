@@ -1,6 +1,6 @@
 {
   "name": "parse-react",
-  "version": "0.2.4",
+  "version": "0.3.0",
   "description": "Use Parse data in React applications",
   "homepage": "https://github.com/ParsePlatform/ParseReact",
   "keywords": [
@@ -16,11 +16,12 @@
   },
   "bugs": "https://github.com/ParsePlatform/ParseReact/issues",
   "files": [
+    "index.js",
+    "class.js",
     "lib/",
     "LICENSE",
     "README.md"
   ],
-  "main": "lib/ParseReact.js",
   "devDependencies": {
     "babel-jest": "~5.0.0",
     "babelify": "^6.0.2",
