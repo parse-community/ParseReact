@@ -394,6 +394,24 @@ describe('Object storage', function() {
     });
   });
 
+  it('handles `null` values', function() {
+    var Item = Parse.Object.extend('Item');
+    var results = [
+      new Item({
+        id: 'I1',
+        value: null
+      })
+    ];
+    var query = new Parse.Query(Item);
+    ObjectStore.storeQueryResults(results, query);
+    expect(ObjectStore.deepFetch(new Id('Item', 'I1'))).toEqual({
+      id: new Id('Item', 'I1'),
+      className: 'Item',
+      objectId: 'I1',
+      value: null
+    });
+  });
+
   it('can fetch multiple objects as shallow copies', function() {
     var Item = Parse.Object.extend('Item');
     var items = [
