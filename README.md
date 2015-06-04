@@ -24,6 +24,10 @@ Parse Query. This is done through an implementation of the [newly-proposed
 ParseReact Mixin allows a version of this new lifecycle method to be used today
 with Parse Queries.
 
+If you're using React with ES6 classes, we also provide a [subclass of
+`React.Component`](/docs/api/ES6.md) that allows you to use the
+`observe()` and Query-specific APIs.
+
 ```js
 var CommentBlock = React.createClass({
   mixins: [ParseReact.Mixin], // Enable query subscriptions
@@ -90,7 +94,7 @@ loading the Parse + React library:
     <script src="https://www.parsecdn.com/js/parse-latest.js"></script>
     <!-- Now include parse-react.js -->
     <script src="https://www.parsecdn.com/js/parse-react.js"></script>
-    
+
     ...
 ```
 
