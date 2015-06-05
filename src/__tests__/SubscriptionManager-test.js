@@ -2,11 +2,16 @@
 
 jest.dontMock('parse');
 
+jest.dontMock('../flatten');
+jest.dontMock('../Id');
+jest.dontMock('../ObjectStore');
 jest.dontMock('../QueryTools');
 jest.dontMock('../StubParse');
 jest.dontMock('../Subscription');
 jest.dontMock('../SubscriptionManager');
 
+var Id = require('../Id');
+var ObjectStore = require('../ObjectStore');
 var QueryTools = require('../QueryTools');
 var queryHash = QueryTools.queryHash;
 var Subscription = require('../Subscription');
@@ -90,14 +95,22 @@ describe('SubscriptionManager', function() {
     var obs = SubscriptionManager.subscribeToQuery(q,
       { onNext: function() {} });
 
+    var result = new Parse.Object('Item');
+    result.id = 'I1';
+    ObjectStore.storeQueryResults(result, q);
+
     var hash = queryHash(q);
     var sub = SubscriptionManager.getSubscription(hash);
     expect(sub).not.toBe(null);
     expect(Object.keys(sub.subscribers).length).toBe(1);
+    expect(ObjectStore._rawStore['Item:I1'].queries[hash]).toBe(true);
+
+    sub.resultSet.push(new Id('Item', 'I1'));
 
     obs.dispose();
     expect(Object.keys(sub.subscribers).length).toBe(0);
     sub = SubscriptionManager.getSubscription(hash);
     expect(sub).toBe(null);
+    expect(ObjectStore._rawStore['Item:I1'].queries[hash]).toBe(undefined);
   });
 });

@@ -92,26 +92,23 @@ export function issueMutation(mutation: Mutation, options: { [key: string]: bool
     mutation.data
   ).then(function(result) {
     var changes;
-    var subscribers;
+    var subscribers = ObjectStore.fetchSubscribers(target);
     var delta = mutation.generateDelta(result);
     if (!options.waitForServer) {
       // Replace the current entry with a Delta
-      subscribers = ObjectStore.fetchSubscribers(target);
       changes = ObjectStore.resolveMutation(target, executionId, delta);
       p.resolve(pushUpdates(subscribers, changes));
     } else {
       // Apply it to the data store
-      subscribers = ObjectStore.fetchSubscribers(target);
       changes = ObjectStore.commitDelta(delta);
       p.resolve(pushUpdates(subscribers, changes));
     }
   }, function(err) {
     if (!options.waitForServer) {
       // Roll back optimistic changes by deleting the entry from the queue
-      var subscribers;
+      var subscribers = ObjectStore.fetchSubscribers(target);
       if (mutation.action === 'CREATE') {
         // Make sure the local object is removed from any result sets
-        subscribers = ObjectStore.fetchSubscribers(target);
         for (var i = 0; i < subscribers.length; i++) {
           var subscriber = SubscriptionManager.getSubscription(subscribers[i]);
           subscriber.removeResult(target);
@@ -119,7 +116,6 @@ export function issueMutation(mutation: Mutation, options: { [key: string]: bool
         ObjectStore.destroyMutationStack(target);
       } else {
         var noop = new Delta(target, {});
-        subscribers = ObjectStore.fetchSubscribers(target);
         var changes = ObjectStore.resolveMutation(
           target,
           executionId,
@@ -148,9 +144,10 @@ function pushUpdates(subscribers: Array<string>, changes: { id: Id; latest: any;
     for (i = 0; i < subscribers.length; i++) {
       subscriber = SubscriptionManager.getSubscription(subscribers[i]);
       if (!subscriber) {
-        throw new Error('Object is attached to a nonexistant subscription');
+        throw new Error('Object is attached to a nonexistent subscription');
       }
       subscriber.removeResult(changes.id);
+      ObjectStore.removeSubscriber(changes.id, subscriber);
     }
     return null;
   }

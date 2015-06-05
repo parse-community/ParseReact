@@ -23,6 +23,8 @@
 
 'use strict';
 
+var Id = require('./Id');
+var ObjectStore = require('./ObjectStore');
 var QueryTools = require('./QueryTools');
 var keysFromHash = QueryTools.keysFromHash;
 var queryHash = QueryTools.queryHash;
@@ -75,13 +77,24 @@ function disposeSubscription(
   ) {
   if (subscription.removeSubscriber(observationId) < 1) {
     // There are no more subscribed components
+    // Tell all results to remove this subscription hash
+    var results = subscription.resultSet;
+    var i;
+    for (i = 0; i < results.length; i++) {
+      var target = results[i];
+      if (!(target instanceof Id)) {
+        target = target.id;
+      }
+      ObjectStore.removeSubscriber(target, hash);
+    }
+    // Clean up the subscription
     delete subscriptions[hash];
     var indexDetails = keysFromHash(hash);
     var classTree = queryFamilies[indexDetails.className];
     if (!classTree) {
       return;
     }
-    for (var i = 0; i < indexDetails.keys.length; i++) {
+    for (i = 0; i < indexDetails.keys.length; i++) {
       delete classTree[indexDetails.keys[i]][hash];
     }
   }
