@@ -147,7 +147,6 @@ function pushUpdates(subscribers: Array<string>, changes: { id: Id; latest: any;
         throw new Error('Object is attached to a nonexistent subscription');
       }
       subscriber.removeResult(changes.id);
-      ObjectStore.removeSubscriber(changes.id, subscriber);
     }
     return null;
   }
