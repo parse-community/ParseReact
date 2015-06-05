@@ -1,6 +1,6 @@
 /*
  *  Parse + React
- *  v0.3.0
+ *  v0.3.1
  */
 (function(f){if(typeof exports==="object"&&typeof module!=="undefined"){module.exports=f()}else if(typeof define==="function"&&define.amd){define([],f)}else{var g;if(typeof window!=="undefined"){g=window}else if(typeof global!=="undefined"){g=global}else if(typeof self!=="undefined"){g=self}else{g=this}g.ParseReact = f()}})(function(){var define,module,exports;return (function e(t,n,r){function s(o,u){if(!n[o]){if(!t[o]){var a=typeof require=="function"&&require;if(!u&&a)return a(o,!0);if(i)return i(o,!0);var f=new Error("Cannot find module '"+o+"'");throw f.code="MODULE_NOT_FOUND",f}var l=n[o]={exports:{}};t[o][0].call(l.exports,function(e){var n=t[o][1][e];return s(n?n:e)},l,l.exports,e,t,n,r)}return n[o].exports}var i=typeof require=="function"&&require;for(var o=0;o<r.length;o++)s(r[o]);return s})({1:[function(_dereq_,module,exports){
 /*
@@ -2198,6 +2198,8 @@ module.exports = Subscription;
 
 'use strict';
 
+var Id = _dereq_('./Id');
+var ObjectStore = _dereq_('./ObjectStore');
 var QueryTools = _dereq_('./QueryTools');
 var keysFromHash = QueryTools.keysFromHash;
 var queryHash = QueryTools.queryHash;
@@ -2243,13 +2245,24 @@ function subscribeToQuery(query, callbacks) {
 function disposeSubscription(subscription, hash, observationId) {
   if (subscription.removeSubscriber(observationId) < 1) {
     // There are no more subscribed components
+    // Tell all results to remove this subscription hash
+    var results = subscription.resultSet;
+    var i;
+    for (i = 0; i < results.length; i++) {
+      var target = results[i];
+      if (!(target instanceof Id)) {
+        target = target.id;
+      }
+      ObjectStore.removeSubscriber(target, hash);
+    }
+    // Clean up the subscription
     delete subscriptions[hash];
     var indexDetails = keysFromHash(hash);
     var classTree = queryFamilies[indexDetails.className];
     if (!classTree) {
       return;
     }
-    for (var i = 0; i < indexDetails.keys.length; i++) {
+    for (i = 0; i < indexDetails.keys.length; i++) {
       delete classTree[indexDetails.keys[i]][hash];
     }
   }
@@ -2319,7 +2332,7 @@ if (typeof process !== 'undefined' && "development" === 'test') {
 module.exports = SubscriptionManager;
 
 }).call(this,_dereq_('_process'))
-},{"./QueryTools":11,"./Subscription":13,"_process":2}],15:[function(_dereq_,module,exports){
+},{"./Id":4,"./ObjectStore":9,"./QueryTools":11,"./Subscription":13,"_process":2}],15:[function(_dereq_,module,exports){
 /*
  *  Copyright (c) 2015, Parse, LLC. All rights reserved.
  *
@@ -2413,26 +2426,23 @@ function issueMutation(mutation, options) {
   var p = new Parse.Promise();
   MutationExecutor.execute(mutation.action, mutation.target, mutation.data).then(function (result) {
     var changes;
-    var subscribers;
+    var subscribers = ObjectStore.fetchSubscribers(target);
     var delta = mutation.generateDelta(result);
     if (!options.waitForServer) {
       // Replace the current entry with a Delta
-      subscribers = ObjectStore.fetchSubscribers(target);
       changes = ObjectStore.resolveMutation(target, executionId, delta);
       p.resolve(pushUpdates(subscribers, changes));
     } else {
       // Apply it to the data store
-      subscribers = ObjectStore.fetchSubscribers(target);
       changes = ObjectStore.commitDelta(delta);
       p.resolve(pushUpdates(subscribers, changes));
     }
   }, function (err) {
     if (!options.waitForServer) {
       // Roll back optimistic changes by deleting the entry from the queue
-      var subscribers;
+      var subscribers = ObjectStore.fetchSubscribers(target);
       if (mutation.action === 'CREATE') {
         // Make sure the local object is removed from any result sets
-        subscribers = ObjectStore.fetchSubscribers(target);
         for (var i = 0; i < subscribers.length; i++) {
           var subscriber = SubscriptionManager.getSubscription(subscribers[i]);
           subscriber.removeResult(target);
@@ -2440,7 +2450,6 @@ function issueMutation(mutation, options) {
         ObjectStore.destroyMutationStack(target);
       } else {
         var noop = new Delta(target, {});
-        subscribers = ObjectStore.fetchSubscribers(target);
         var changes = ObjectStore.resolveMutation(target, executionId, noop);
         pushUpdates(subscribers, changes);
       }
@@ -2465,7 +2474,7 @@ function pushUpdates(subscribers, changes) {
     for (i = 0; i < subscribers.length; i++) {
       subscriber = SubscriptionManager.getSubscription(subscribers[i]);
       if (!subscriber) {
-        throw new Error('Object is attached to a nonexistant subscription');
+        throw new Error('Object is attached to a nonexistent subscription');
       }
       subscriber.removeResult(changes.id);
     }
