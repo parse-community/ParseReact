@@ -305,6 +305,10 @@ describe('Parse encoder', function() {
     });
   });
 
+  it('allows null values', function() {
+    expect(encode(null)).toEqual(null);
+  });
+
   it('maps over arrays', function() {
     var arr = [
       'string',
@@ -358,6 +362,6 @@ describe('Parse encoder', function() {
     b = [a];
     a.push(b);
 
-    expect(encode.bind(null, a)).toThrow(new Error('Tried to encode circular reference'));    
+    expect(encode.bind(null, a)).toThrow(new Error('Tried to encode circular reference'));
   });
 });
