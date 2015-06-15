@@ -4,7 +4,7 @@
   "dependencies": {
     "react": "^0.13.0",
     "parse": "^1.4.0",
-    "parse-react": "^0.2.0"
+    "parse-react": "^0.3.0"
   },
   "devDependencies": {
     "babelify": "^6.0.2",
