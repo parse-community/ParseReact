@@ -17,6 +17,38 @@ var matchesQuery = QueryTools.matchesQuery;
 
 var Item = Parse.Object.extend('Item');
 
+describe('stringify', function() {
+  it('stringifies null and undefined', function() {
+    expect(QueryTools.stringify(null)).toBe('null');
+    expect(QueryTools.stringify(undefined)).toBe('undefined');
+  });
+
+  it('stringifies numbers', function() {
+    expect(QueryTools.stringify(12)).toBe('12');
+    expect(QueryTools.stringify(-33)).toBe('-33');
+    expect(QueryTools.stringify(Infinity)).toBe('Infinity');
+  });
+
+  it('stringifies strings', function() {
+    expect(QueryTools.stringify('hello world')).toBe('"hello world"');
+    expect(QueryTools.stringify('5')).not.toBe(QueryTools.stringify(5));
+  });
+
+  it('stringifies arrays, resorting them', function() {
+    expect(QueryTools.stringify([])).toBe('[]');
+    expect(QueryTools.stringify([1, 'two'])).toBe('["two",1]');
+    expect(QueryTools.stringify([1, 'two'])).toBe(QueryTools.stringify(['two', 1]));
+  });
+
+  it('stringifies objects, sorting keys', function() {
+    expect(QueryTools.stringify({})).toBe('{}');
+    expect(QueryTools.stringify({ key: 'value' })).toBe('{"key":"value"}');
+    expect(QueryTools.stringify({ a: 'A', b: 'B', c: 'C' })).toBe(
+      QueryTools.stringify({ b: 'B', c: 'C', a: 'A' })
+    );
+  })
+});
+
 describe('queryHash', function() {
   it('should throw an error if the argument is not a query', function() {
     expect(queryHash.bind(null, 'not a query')).toThrow();
@@ -51,7 +83,7 @@ describe('queryHash', function() {
     q2.ascending('createdAt');
     q2.exists('name');
     q2.equalTo('field', 'value');
-    
+
     var firstHash = queryHash(q1);
     var secondHash = queryHash(q2);
     expect(firstHash).toBe(secondHash);
@@ -364,7 +396,7 @@ describe('matchesQuery', function() {
     expect(matchesQuery(player, q)).toBe(true);
 
     q.matches('name', /A[^n]d/);
-    expect(matchesQuery(player, q)).toBe(false);    
+    expect(matchesQuery(player, q)).toBe(false);
 
     // Check that the string \\E is returned to normal
     player.name = 'Slash \\E';

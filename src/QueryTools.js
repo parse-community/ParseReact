@@ -52,7 +52,7 @@ function flattenOrQueries(where) {
  * Deterministically turns an object into a string. Disregards ordering
  */
 function stringify(object): string {
-  if (typeof object !== 'object') {
+  if (typeof object !== 'object' || object === null) {
     if (typeof object === 'string') {
       return '"' + object.replace(/\|/g, '%|') + '"';
     }
@@ -300,8 +300,14 @@ function matchesKeyConstraints(object, key, constraints) {
   return true;
 }
 
-module.exports = {
+var QueryTools: any = {
   queryHash: queryHash,
   keysFromHash: keysFromHash,
   matchesQuery: matchesQuery
 };
+
+if (typeof process !== 'undefined' && process.env.NODE_ENV === 'test') {
+  QueryTools.stringify = stringify;
+}
+
+module.exports = QueryTools;
