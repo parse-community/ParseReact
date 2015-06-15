@@ -14,6 +14,7 @@ var QueryTools = require('../QueryTools');
 var queryHash = QueryTools.queryHash;
 var keysFromHash = QueryTools.keysFromHash;
 var matchesQuery = QueryTools.matchesQuery;
+var stringify = QueryTools.stringify;
 
 var Item = Parse.Object.extend('Item');
 
@@ -381,5 +382,13 @@ describe('matchesQuery', function() {
     expect(matchesQuery(player, q)).toBe(true);
     q.contains('name', 'h \\Q or');
     expect(matchesQuery(player, q)).toBe(false);
+  });
+});
+
+describe('stringify', function() {
+  it('handles null values', function() {
+    var value = null;
+
+    expect(stringify(value)).toBe("null");
   });
 });
