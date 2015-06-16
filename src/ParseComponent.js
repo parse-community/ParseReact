@@ -48,7 +48,7 @@ export default class ParseComponent extends React.Component {
     this._queryErrors = {};
 
     if (!this.observe) {
-      throw new Error('Components using ParseReact.Mixin must declare an ' +
+      throw new Error('Components extending ParseComponent must declare an ' +
         'observe() method.');
     }
   }
