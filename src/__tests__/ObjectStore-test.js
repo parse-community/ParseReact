@@ -376,6 +376,40 @@ describe('Object storage', function() {
     });
   });
 
+  it('supplies data for all pointers that exist at the same depth', function() {
+    var Item = Parse.Object.extend('Item');
+    var child = new Item({
+      id: 'I2',
+      value: 12
+    });
+    var parent = new Item({
+      id: 'I1',
+      value: 11,
+      childA: child,
+      childB: child
+    });
+    query = new Parse.Query(Item).include('childA,childB');
+    ObjectStore.storeQueryResults([parent, child], query);
+    expect(ObjectStore.deepFetch(new Id('Item', 'I1'), [])).toEqual({
+      id: new Id('Item', 'I1'),
+      className: 'Item',
+      objectId: 'I1',
+      value: 11,
+      childA: {
+        id: new Id('Item', 'I2'),
+        className: 'Item',
+        objectId: 'I2',
+        value: 12
+      },
+      childB: {
+        id: new Id('Item', 'I2'),
+        className: 'Item',
+        objectId: 'I2',
+        value: 12
+      }
+    });
+  });
+
   it('handles empty pointers when queries include multiple layers', function() {
     var Item = Parse.Object.extend('Item');
     var results = [
