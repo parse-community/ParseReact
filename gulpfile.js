@@ -55,6 +55,7 @@ function fullHeader() {
 gulp.task('lib', function() {
   return gulp.src('./src/*.js')
     .pipe(babel())
+    .pipe(replace(/@flow/g, ''))
     .pipe(gulp.dest('./lib'));
 });
 
@@ -70,6 +71,7 @@ gulp.task('dist', function() {
   .bundle();
   return stream.pipe(source('parse-react.js'))
     .pipe(derequire())
+    .pipe(replace(/@flow/g, ''))
     .pipe(insert.prepend(versionHeader()))
     .pipe(gulp.dest('./dist'));
 });
