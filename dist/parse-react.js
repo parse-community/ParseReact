@@ -36,7 +36,8 @@ ParsePatches.applyPatches();
 module.exports = {
   currentUser: LocalSubscriptions.currentUser,
   Mixin: _dereq_('./Mixin'),
-  Mutation: _dereq_('./Mutation') };
+  Mutation: _dereq_('./Mutation')
+};
 
 },{"./LocalSubscriptions":5,"./Mixin":6,"./Mutation":7,"./ParsePatches":10}],2:[function(_dereq_,module,exports){
 // shim for using process in browser
@@ -119,7 +120,7 @@ process.umask = function() { return 0; };
  *  FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
  *  IN THE SOFTWARE.
  *
- *  @flow
+ *  
  */
 
 'use strict';
@@ -213,7 +214,7 @@ module.exports = Delta;
  *  FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
  *  IN THE SOFTWARE.
  *
- *  @flow
+ *  
  */
 
 'use strict';
@@ -278,7 +279,7 @@ module.exports = Id;
  *  FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
  *  IN THE SOFTWARE.
  *
- *  @flow
+ *  
  */
 
 'use strict';
@@ -382,7 +383,7 @@ module.exports = LocalSubscriptions;
  *  FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
  *  IN THE SOFTWARE.
  *
- *  @flow
+ *  
  */
 
 'use strict';
@@ -542,7 +543,7 @@ module.exports = Mixin;
  *  FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
  *  IN THE SOFTWARE.
  *
- *  @flow
+ *  
  */
 
 'use strict';
@@ -827,7 +828,7 @@ module.exports = {
  *  FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
  *  IN THE SOFTWARE.
  *
- *  @flow
+ *  
  */
 
 'use strict';
@@ -1029,7 +1030,8 @@ function execute(action, target, data) {
 }
 
 var MutationExecutor = {
-  execute: execute };
+  execute: execute
+};
 
 if (typeof process !== 'undefined' && "development" === 'test') {
   MutationExecutor.encode = encode;
@@ -1060,7 +1062,7 @@ module.exports = MutationExecutor;
  *  FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
  *  IN THE SOFTWARE.
  *
- *  @flow
+ *  
  */
 
 'use strict';
@@ -1391,13 +1393,14 @@ function deepFetch(id, seen) {
   }
   var source = store[id].data;
   var obj = {};
+  var seenChildren = [];
   for (var attr in source) {
     var sourceVal = source[attr];
     if (sourceVal && typeof sourceVal === 'object' && sourceVal.__type === 'Pointer') {
       var childId = new Id(sourceVal.className, sourceVal.objectId);
       if (seen.indexOf(childId.toString()) < 0 && store[childId]) {
-        seen = seen.concat([childId.toString()]);
-        sourceVal = deepFetch(childId, seen);
+        seenChildren = seenChildren.concat([childId.toString()]);
+        sourceVal = deepFetch(childId, seen.concat(seenChildren));
       }
     }
     obj[attr] = sourceVal;
@@ -1548,7 +1551,8 @@ var patches = {
     var promise = oldLogOut();
     LocalSubscriptions.currentUser.update();
     return promise;
-  } };
+  }
+};
 
 var ParsePatches = {
   applyPatches: function applyPatches() {
@@ -1589,7 +1593,7 @@ module.exports = ParsePatches;
  *  FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
  *  IN THE SOFTWARE.
  *
- *  @flow
+ *  
  */
 
 'use strict';
@@ -1942,7 +1946,7 @@ if (typeof Parse === 'undefined') {
  *  FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
  *  IN THE SOFTWARE.
  *
- *  @flow
+ *  
  */
 
 'use strict';
@@ -2201,7 +2205,7 @@ module.exports = Subscription;
  *  FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
  *  IN THE SOFTWARE.
  *
- *  @flow
+ *  
  */
 
 'use strict';
@@ -2361,7 +2365,7 @@ module.exports = SubscriptionManager;
  *  FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
  *  IN THE SOFTWARE.
  *
- *  @flow
+ *  
  */
 
 'use strict';
