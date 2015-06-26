@@ -89,7 +89,8 @@ export function issueMutation(mutation: Mutation, options: { [key: string]: bool
   MutationExecutor.execute(
     mutation.action,
     mutation.target,
-    mutation.data
+    mutation.data,
+    options.batch
   ).then(function(result) {
     var changes;
     var subscribers = ObjectStore.fetchSubscribers(target);
