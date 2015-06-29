@@ -13,10 +13,12 @@ is updated, the new version will be pushed to all subscribed components.
 when the server request completes. If an error occurs, the promise is rejected.
 
 - `options` (optional): A plain JavaScript object of key/value pairs to
-configure the dispatch. At this point, only one option is supported:
+configure the dispatch.
   - `waitForServer` (default: `false`): If set to true, components won't update
   optimistically, and will wait for confirmation that the operation was
   successful before updating.
+  - `batch`: Pass a `ParseReact.Mutation.Batch` instance to perform the mutation
+  as part of that batch rather than individually.
 
 ## Mutation Generators
 
