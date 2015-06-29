@@ -83,3 +83,20 @@ The `dispatch()` call returns a `Parse.Promise`, so that you can respond when
 server request succeeds or fails. In case of failure, you may want to update
 the state of your application to display a message to the user, and possibly
 give them a click-to-retry option.
+
+Note: the above will send three individual requests to the server. Often it is
+desirable to group multiple mutation call into one batch request:
+
+```js
+var batch = new ParseReact.Mutation.Batch();
+creator.dispatch({ batch: batch });
+creator.dispatch({ batch: batch });
+creator.dispatch({ batch: batch });
+batch.dispatch();
+```
+
+The promises returned by the individual `dispatch()` calls of the mutations
+will continue to work as usual, but won't be resolved until the batch request
+has been completed. The batch's `dispatch()` call also returns a
+`Parse.Promise()` to inform the caller of the success or failure of the overall
+batch request.

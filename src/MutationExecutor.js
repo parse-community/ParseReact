@@ -26,6 +26,15 @@
 var Id = require('./Id');
 var Parse = require('./StubParse');
 
+type ParseRequestOptions = {
+  method: string;
+  route: string;
+  className: string;
+};
+
+import type * as MutationBatch from './MutationBatch';
+
+
 var toString = Object.prototype.toString;
 // Special version of Parse._encode to handle our unique representations of
 // pointers
@@ -88,7 +97,7 @@ function encode(data, seen?) {
   return data;
 }
 
-function request(options) {
+function sendRequest(options: ParseRequestOptions): Parse.Promise {
   return Parse._request(options).then(function(result) {
     if (result.createdAt) {
       result.createdAt = new Date(result.createdAt);
@@ -100,10 +109,16 @@ function request(options) {
   });
 }
 
-function execute(action: string, target: Id|string, data: any) {
+function execute(
+  action: string,
+  target: Id|string,
+  data: any,
+  batch: ?MutationBatch
+): Parse.Promise {
   var className = (typeof target === 'string') ? target : target.className;
   var objectId = (typeof target === 'string') ? '' : target.objectId;
   var payload;
+  var request = batch ? batch.addRequest : sendRequest;
   switch (action) {
     case 'CREATE':
       return request({

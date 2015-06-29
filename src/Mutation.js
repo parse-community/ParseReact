@@ -25,6 +25,7 @@
 
 var Delta = require('./Delta');
 var Id = require('./Id');
+var MutationBatch = require('./MutationBatch');
 var Parse = require('./StubParse');
 var UpdateChannel = require('./UpdateChannel');
 
@@ -190,6 +191,7 @@ class Mutation {
 
 module.exports = {
   Mutation: Mutation,
+  Batch: MutationBatch,
   // Basic Mutations
   Create: function(className: string, data: any): Mutation {
     data = data || {};
