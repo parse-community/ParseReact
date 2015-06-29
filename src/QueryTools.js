@@ -285,8 +285,16 @@ function matchesKeyConstraints(object, key, constraints) {
           return false;
         }
         break;
+      case '$nearSphere':
+        var distance = compareTo.radiansTo(object[key]);
+        var max = constraints.$maxDistance || Infinity;
+        return distance <= max;
       case '$options':
         // Not a query type, but a way to add options to $regex. Ignore and
+        // avoid the default
+        break;
+      case '$maxDistance':
+        // Not a query type, but a way to add a cap to $nearSphere. Ignore and
         // avoid the default
         break;
       case '$select':

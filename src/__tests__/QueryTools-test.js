@@ -414,4 +414,23 @@ describe('matchesQuery', function() {
     q.contains('name', 'h \\Q or');
     expect(matchesQuery(player, q)).toBe(false);
   });
+
+it('matches $nearSphere queries', function() {
+  var q = new Parse.Query('Checkin');
+  q.near('location', new Parse.GeoPoint(20, 20));
+  // With no max distance, any GeoPoint is 'near'
+  var pt = {
+    id: new Id('Checkin', 'C1'),
+    location: new Parse.GeoPoint(40, 40)
+  };
+  expect(matchesQuery(pt, q)).toBe(true);
+
+  q = new Parse.Query('Checkin');
+  pt.location = new Parse.GeoPoint(40, 40);
+  q.withinRadians('location', new Parse.GeoPoint(30, 30), 0.3);
+  expect(matchesQuery(pt, q)).toBe(true);
+
+  q.withinRadians('location', new Parse.GeoPoint(30, 30), 0.2);
+  expect(matchesQuery(pt, q)).toBe(false);
+});
 });
