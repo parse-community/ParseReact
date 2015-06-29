@@ -39,7 +39,7 @@ module.exports = {
   Mutation: _dereq_('./Mutation')
 };
 
-},{"./LocalSubscriptions":5,"./Mixin":6,"./Mutation":7,"./ParsePatches":10}],2:[function(_dereq_,module,exports){
+},{"./LocalSubscriptions":5,"./Mixin":6,"./Mutation":7,"./ParsePatches":11}],2:[function(_dereq_,module,exports){
 // shim for using process in browser
 
 var process = module.exports = {};
@@ -362,7 +362,7 @@ var LocalSubscriptions = {
 
 module.exports = LocalSubscriptions;
 
-},{"./Id":4,"./ObjectStore":9,"./StubParse":12,"./flatten":17}],6:[function(_dereq_,module,exports){
+},{"./Id":4,"./ObjectStore":10,"./StubParse":13,"./flatten":18}],6:[function(_dereq_,module,exports){
 /*
  *  Copyright (c) 2015, Parse, LLC. All rights reserved.
  *
@@ -522,7 +522,7 @@ var Mixin = {
 
 module.exports = Mixin;
 
-},{"./StubParse":12,"./warning":18}],7:[function(_dereq_,module,exports){
+},{"./StubParse":13,"./warning":19}],7:[function(_dereq_,module,exports){
 /*
  *  Copyright (c) 2015, Parse, LLC. All rights reserved.
  *
@@ -554,6 +554,7 @@ function _classCallCheck(instance, Constructor) { if (!(instance instanceof Cons
 
 var Delta = _dereq_('./Delta');
 var Id = _dereq_('./Id');
+var MutationBatch = _dereq_('./MutationBatch');
 var Parse = _dereq_('./StubParse');
 var UpdateChannel = _dereq_('./UpdateChannel');
 
@@ -717,6 +718,7 @@ var Mutation = (function () {
 
 module.exports = {
   Mutation: Mutation,
+  Batch: MutationBatch,
   // Basic Mutations
   Create: function Create(className, data) {
     data = data || {};
@@ -806,7 +808,110 @@ module.exports = {
   }
 };
 
-},{"./Delta":3,"./Id":4,"./StubParse":12,"./UpdateChannel":15,"./warning":18}],8:[function(_dereq_,module,exports){
+},{"./Delta":3,"./Id":4,"./MutationBatch":8,"./StubParse":13,"./UpdateChannel":16,"./warning":19}],8:[function(_dereq_,module,exports){
+/*
+ *  Copyright (c) 2015, Parse, LLC. All rights reserved.
+ *
+ *  You are hereby granted a non-exclusive, worldwide, royalty-free license to
+ *  use, copy, modify, and distribute this software in source code or binary
+ *  form for use in connection with the web services and APIs provided by Parse.
+ *
+ *  As with any software that integrates with the Parse platform, your use of
+ *  this software is subject to the Parse Terms of Service
+ *  [https://www.parse.com/about/terms]. This copyright notice shall be
+ *  included in all copies or substantial portions of the software.
+ *
+ *  THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ *  IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ *  FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ *  AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ *  LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+ *  FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
+ *  IN THE SOFTWARE.
+ *
+ *  
+ */
+
+'use strict';
+
+var _createClass = (function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ('value' in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; })();
+
+function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError('Cannot call a class as a function'); } }
+
+var Parse = _dereq_('./StubParse');
+
+var MutationBatch = (function () {
+  function MutationBatch() {
+    _classCallCheck(this, MutationBatch);
+
+    this._requests = [];
+    this.addRequest = this.addRequest.bind(this);
+  }
+
+  _createClass(MutationBatch, [{
+    key: 'getNumberOfRequests',
+    value: function getNumberOfRequests() {
+      return this._requests.length;
+    }
+  }, {
+    key: 'addRequest',
+    value: function addRequest(options) {
+      if (this.getNumberOfRequests() === MutationBatch.maxBatchSize) {
+        throw new Error('Cannot batch more than ' + MutationBatch.maxBatchSize + ' requests at a time.');
+      }
+      var promise = options.__promise = new Parse.Promise();
+      this._requests.push(options);
+      return promise;
+    }
+  }, {
+    key: 'dispatch',
+    value: function dispatch() {
+      var requests = this._requests.map(function (req) {
+        var path = '/1/' + req.route;
+        if (req.className) {
+          path += '/' + req.className;
+        }
+        if (req.objectId) {
+          path += '/' + req.objectId;
+        }
+        return {
+          method: req.method,
+          path: path,
+          body: req.data
+        };
+      });
+      var batchRequest = {
+        method: 'POST',
+        route: 'batch',
+        data: { requests: requests }
+      };
+      var self = this;
+      return Parse._request(batchRequest).then(function (response) {
+        self._requests.forEach(function (req, i) {
+          var result = response[i];
+          if (result.success) {
+            req.__promise.resolve(result.success);
+          } else if (result.error) {
+            req.__promise.reject(result.error);
+          }
+        });
+      }, function (error) {
+        self._requests.forEach(function (req, i) {
+          req.__promise.reject(error);
+        });
+        return Parse.Promise.error(error);
+      });
+    }
+  }]);
+
+  return MutationBatch;
+})();
+
+MutationBatch.maxBatchSize = 50;
+
+module.exports = MutationBatch;
+
+},{"./StubParse":13}],9:[function(_dereq_,module,exports){
 (function (process){
 /*
  *  Copyright (c) 2015, Parse, LLC. All rights reserved.
@@ -898,7 +1003,7 @@ function encode(data, seen) {
   return data;
 }
 
-function request(options) {
+function sendRequest(options) {
   return Parse._request(options).then(function (result) {
     if (result.createdAt) {
       result.createdAt = new Date(result.createdAt);
@@ -910,10 +1015,11 @@ function request(options) {
   });
 }
 
-function execute(action, target, data) {
+function execute(action, target, data, batch) {
   var className = typeof target === 'string' ? target : target.className;
   var objectId = typeof target === 'string' ? '' : target.objectId;
   var payload;
+  var request = batch ? batch.addRequest : sendRequest;
   switch (action) {
     case 'CREATE':
       return request({
@@ -1040,7 +1146,7 @@ if (typeof process !== 'undefined' && "development" === 'test') {
 module.exports = MutationExecutor;
 
 }).call(this,_dereq_('_process'))
-},{"./Id":4,"./StubParse":12,"_process":2}],9:[function(_dereq_,module,exports){
+},{"./Id":4,"./StubParse":13,"_process":2}],10:[function(_dereq_,module,exports){
 (function (process){
 /*
  *  Copyright (c) 2015, Parse, LLC. All rights reserved.
@@ -1474,7 +1580,7 @@ if (typeof process !== 'undefined' && "development" === 'test') {
 module.exports = ObjectStore;
 
 }).call(this,_dereq_('_process'))
-},{"./Id":4,"./QueryTools":11,"./flatten":17,"_process":2}],10:[function(_dereq_,module,exports){
+},{"./Id":4,"./QueryTools":12,"./flatten":18,"_process":2}],11:[function(_dereq_,module,exports){
 /*
  *  Copyright (c) 2015, Parse, LLC. All rights reserved.
  *
@@ -1571,7 +1677,7 @@ var ParsePatches = {
 
 module.exports = ParsePatches;
 
-},{"./LocalSubscriptions":5,"./StubParse":12,"./SubscriptionManager":14,"./flatten":17}],11:[function(_dereq_,module,exports){
+},{"./LocalSubscriptions":5,"./StubParse":13,"./SubscriptionManager":15,"./flatten":18}],12:[function(_dereq_,module,exports){
 (function (process){
 /*
  *  Copyright (c) 2015, Parse, LLC. All rights reserved.
@@ -1885,7 +1991,7 @@ if (typeof process !== 'undefined' && "development" === 'test') {
 module.exports = QueryTools;
 
 }).call(this,_dereq_('_process'))
-},{"./Id":4,"./StubParse":12,"./equalObjects":16,"_process":2}],12:[function(_dereq_,module,exports){
+},{"./Id":4,"./StubParse":13,"./equalObjects":17,"_process":2}],13:[function(_dereq_,module,exports){
 /*
  *  Copyright (c) 2015, Parse, LLC. All rights reserved.
  *
@@ -1924,7 +2030,7 @@ if (typeof Parse === 'undefined') {
   module.exports = Parse;
 }
 
-},{"parse":undefined}],13:[function(_dereq_,module,exports){
+},{"parse":undefined}],14:[function(_dereq_,module,exports){
 (function (process){
 /*
  *  Copyright (c) 2015, Parse, LLC. All rights reserved.
@@ -2183,7 +2289,7 @@ if (typeof process !== 'undefined' && "development" === 'test') {
 module.exports = Subscription;
 
 }).call(this,_dereq_('_process'))
-},{"./Id":4,"./ObjectStore":9,"_process":2}],14:[function(_dereq_,module,exports){
+},{"./Id":4,"./ObjectStore":10,"_process":2}],15:[function(_dereq_,module,exports){
 (function (process){
 /*
  *  Copyright (c) 2015, Parse, LLC. All rights reserved.
@@ -2344,7 +2450,7 @@ if (typeof process !== 'undefined' && "development" === 'test') {
 module.exports = SubscriptionManager;
 
 }).call(this,_dereq_('_process'))
-},{"./Id":4,"./ObjectStore":9,"./QueryTools":11,"./Subscription":13,"_process":2}],15:[function(_dereq_,module,exports){
+},{"./Id":4,"./ObjectStore":10,"./QueryTools":12,"./Subscription":14,"_process":2}],16:[function(_dereq_,module,exports){
 /*
  *  Copyright (c) 2015, Parse, LLC. All rights reserved.
  *
@@ -2436,7 +2542,7 @@ function issueMutation(mutation, options) {
   }
 
   var p = new Parse.Promise();
-  MutationExecutor.execute(mutation.action, mutation.target, mutation.data).then(function (result) {
+  MutationExecutor.execute(mutation.action, mutation.target, mutation.data, options.batch).then(function (result) {
     var changes;
     var subscribers = ObjectStore.fetchSubscribers(target);
     var delta = mutation.generateDelta(result);
@@ -2537,7 +2643,7 @@ module.exports = {
   issueMutation: issueMutation
 };
 
-},{"./Delta":3,"./Id":4,"./LocalSubscriptions":5,"./MutationExecutor":8,"./ObjectStore":9,"./QueryTools":11,"./StubParse":12,"./SubscriptionManager":14}],16:[function(_dereq_,module,exports){
+},{"./Delta":3,"./Id":4,"./LocalSubscriptions":5,"./MutationExecutor":9,"./ObjectStore":10,"./QueryTools":12,"./StubParse":13,"./SubscriptionManager":15}],17:[function(_dereq_,module,exports){
 /*
  *  Copyright (c) 2015, Parse, LLC. All rights reserved.
  *
@@ -2611,7 +2717,7 @@ function equalObjects(a, b) {
 
 module.exports = equalObjects;
 
-},{}],17:[function(_dereq_,module,exports){
+},{}],18:[function(_dereq_,module,exports){
 /*
  *  Copyright (c) 2015, Parse, LLC. All rights reserved.
  *
@@ -2692,7 +2798,7 @@ function flatten(object) {
 
 module.exports = flatten;
 
-},{"./Id":4,"./StubParse":12,"./warning":18}],18:[function(_dereq_,module,exports){
+},{"./Id":4,"./StubParse":13,"./warning":19}],19:[function(_dereq_,module,exports){
 /*
  *  Copyright (c) 2015, Parse, LLC. All rights reserved.
  *
