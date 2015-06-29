@@ -53,6 +53,14 @@ var patches = {
   },
 
   /**
+   * The ParseReact equivalent to Parse.Query(...).get(objectId)
+   */
+  observeOne: function(objectId) {
+    this._observeOne = true;
+    return this.equalTo('objectId', objectId).limit(1);
+  },
+
+  /**
    * Patches for Parse.User to watch for user signup / login / logout
    */
   signUp: function(attrs, options) {
@@ -84,6 +92,9 @@ var ParsePatches = {
     }
     if (!Parse.Query.prototype.subscribe) {
       Parse.Query.prototype.subscribe = patches.subscribe;
+    }
+    if (!Parse.Query.prototype.observeOne) {
+      Parse.Query.prototype.observeOne = patches.observeOne;
     }
     Parse.User.prototype.signUp = patches.signUp;
     Parse.User.prototype.logIn = patches.logIn;

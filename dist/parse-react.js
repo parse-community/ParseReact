@@ -1636,6 +1636,14 @@ var patches = {
   },
 
   /**
+   * The ParseReact equivalent to Parse.Query(...).get(objectId)
+   */
+  observeOne: function observeOne(objectId) {
+    this._observeOne = true;
+    return this.equalTo('objectId', objectId).limit(1);
+  },
+
+  /**
    * Patches for Parse.User to watch for user signup / login / logout
    */
   signUp: function signUp(attrs, options) {
@@ -1667,6 +1675,9 @@ var ParsePatches = {
     }
     if (!Parse.Query.prototype.subscribe) {
       Parse.Query.prototype.subscribe = patches.subscribe;
+    }
+    if (!Parse.Query.prototype.observeOne) {
+      Parse.Query.prototype.observeOne = patches.observeOne;
     }
     Parse.User.prototype.signUp = patches.signUp;
     Parse.User.prototype.logIn = patches.logIn;
@@ -2140,7 +2151,8 @@ var Subscription = (function () {
       if (resultSet[0] && !(resultSet[0] instanceof Id)) {
         resultSet = resultSet.map(extractId);
       }
-      callbacks.onNext(resultSet.length ? ObjectStore.getDataForIds(resultSet) : []);
+      var data = resultSet.length ? ObjectStore.getDataForIds(resultSet) : [];
+      callbacks.onNext(this.originalQuery._observeOne ? data[0] : data);
 
       return oid;
     }
@@ -2268,7 +2280,7 @@ var Subscription = (function () {
       for (var oid in this.subscribers) {
         var subscriber = this.subscribers[oid];
         if (Array.isArray(data)) {
-          subscriber.onNext(data);
+          subscriber.onNext(this.originalQuery._observeOne ? data[0] : data);
         } else if (data.error && subscriber.onError) {
           subscriber.onError(data.error);
         }
