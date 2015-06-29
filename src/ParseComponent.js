@@ -22,8 +22,7 @@
 
 'use strict';
 
-var React = require('react');
-
+var React = require('./StubReact');
 var Parse = require('./StubParse');
 var ParsePatches = require('./ParsePatches');
 var warning = require('./warning');

@@ -22,6 +22,9 @@
     "LICENSE",
     "README.md"
   ],
+  "browser": {
+    "react-native": false
+  },
   "devDependencies": {
     "babel-jest": "~5.0.0",
     "babelify": "^6.0.2",
