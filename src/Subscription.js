@@ -110,9 +110,8 @@ class Subscription {
     if (resultSet[0] && !(resultSet[0] instanceof Id)) {
       resultSet = resultSet.map(extractId);
     }
-    callbacks.onNext(
-      resultSet.length ? ObjectStore.getDataForIds(resultSet) : []
-    );
+    var data = resultSet.length ? ObjectStore.getDataForIds(resultSet) : [];
+    callbacks.onNext(this.originalQuery._observeOne ? data[0] : data);
 
     return oid;
   }
@@ -236,7 +235,7 @@ class Subscription {
     for (var oid in this.subscribers) {
       var subscriber = this.subscribers[oid];
       if (Array.isArray(data)) {
-        subscriber.onNext(data);
+        subscriber.onNext(this.originalQuery._observeOne ? data[0] : data);
       } else if (data.error && subscriber.onError) {
         subscriber.onError(data.error);
       }

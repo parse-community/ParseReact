@@ -29,6 +29,7 @@ jest.dontMock('../Id');
 jest.dontMock('../QueryTools');
 jest.dontMock('../StubParse');
 jest.dontMock('../Subscription');
+jest.dontMock('../ParsePatches');
 
 jest.dontMock('parse');
 
@@ -36,6 +37,7 @@ var Id = require('../Id');
 var Subscription = require('../Subscription');
 
 var Parse = require('parse').Parse;
+require('../ParsePatches').applyPatches();
 
 describe('compareObjectOrder', function() {
   it('can compare a single condition', function() {
@@ -259,7 +261,6 @@ describe('Subscription', function() {
     q.find.mockReturnValue(promise);
     var sub = new Subscription(q);
 
-    var cb = jest.genMockFn();
     var lastResult = {};
     sub.addSubscriber({ onNext: function(data) {
       lastResult.first = data;
@@ -333,7 +334,6 @@ describe('Subscription', function() {
     ]));
     var sub = new Subscription(q);
 
-    var cb = jest.genMockFn();
     var lastResult = {};
     sub.addSubscriber({ onNext: function(data) {
       lastResult.first = data;
@@ -357,6 +357,37 @@ describe('Subscription', function() {
           value: 12
         }
       ]
+    });
+  });
+
+  it('can query an object by ID', function() {
+    var q = new Parse.Query('Item').observeOne('I1');
+    q.find = jest.genMockFn();
+    q.find.mockReturnValue(Parse.Promise.as([
+      new Parse.Object('Item', { objectId: 'I1', value: 42 })
+    ]));
+    var sub = new Subscription(q);
+
+    var result;
+    sub.addSubscriber({ onNext: function(data) {
+      result = data;
+    } });
+
+    expect(result).toEqual({
+      className: 'Item',
+      objectId: 'I1',
+      value: 42,
+    });
+
+    // Re-issuing the query will push the new data to the subscriber as expected.
+    q.find.mockReturnValue(Parse.Promise.as([
+      new Parse.Object('Item', { objectId: 'I1', value: 123 })
+    ]));
+    sub.issueQuery();
+    expect(result).toEqual({
+      className: 'Item',
+      objectId: 'I1',
+      value: 123,
     });
   });
 });
