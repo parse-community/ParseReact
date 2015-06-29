@@ -48,7 +48,8 @@ class MutationBatch {
 
   addRequest(options: ParseRequestOptions): Parse.Promise {
     if (this.getNumberOfRequests() === MutationBatch.maxBatchSize) {
-      throw new Error('Cannot batch more than 50 requests at a time');
+      throw new Error('Cannot batch more than ' + MutationBatch.maxBatchSize +
+        ' requests at a time.');
     }
     var promise = options.__promise = new Parse.Promise();
     this._requests.push(options);
