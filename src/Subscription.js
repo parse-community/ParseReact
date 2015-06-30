@@ -28,7 +28,12 @@ var ObjectStore = require('./ObjectStore');
 
 type ParseObject = {
   id: Id
-}
+};
+
+type Subscriber = {
+  onNext: (value: any) => void;
+  onError?: (error: any) => void;
+};
 
 /**
  * A Subscription represents the relationship between components and the results
@@ -75,8 +80,7 @@ function compareObjectOrder(queryOrder, object, orderInfo) {
 class Subscription {
   originalQuery: ParseQuery;
   pending: boolean;
-  subscribers: { [key: string]:
-    { onNext: (value: any) => void; onError?: (error: any) => void } };
+  subscribers: { [key: string]: Subscriber };
   resultSet: Array<any>;
   observationCount: number;
 
@@ -100,9 +104,7 @@ class Subscription {
    * `callback` will be called to send that data back to the component. `name`
    * determines the prop to which that data is attached.
    */
-  addSubscriber(callbacks:
-      { onNext: (value: any) => void; onError?: (error: any) => void }
-    ): string {
+  addSubscriber(callbacks: Subscriber): string {
     var oid = 'o' + this.observationCount++;
     this.subscribers[oid] = callbacks;
 
@@ -126,6 +128,12 @@ class Subscription {
     return Object.keys(this.subscribers).length;
   }
 
+  _forEachSubscriber(callable: (subscriber: Subscriber) => void) {
+    for (var oid in this.subscribers) {
+      callable.call(this, this.subscribers[oid]);
+    }
+  }
+
   /**
    * Executes the query for this subscription. When the results are returned,
    * they are cached in the ObjectStore and then pushed to all subscribed
@@ -142,7 +150,7 @@ class Subscription {
       this.pushData();
     }, (err) => {
       this.pending = false;
-      this.pushData({ error: err });
+      this.pushError(err);
     });
   }
 
@@ -210,13 +218,8 @@ class Subscription {
   /**
    * Fetches the full data for the latest result set, and passes it to each
    * component subscribed to this query.
-   * If override is provided, it will be directly passed to the components,
-   * rather than fetching the latest data from the ObjectStore. This is ideal
-   * if you already have calculated the result data, or wish to send an
-   * alternative payload.
    */
-  pushData(override?: any) {
-    var data = override || [];
+  pushData() {
     var results = this.resultSet;
     // Fetch a subset of results if the query has a limit
     if (this.originalQuery._limit > -1) {
@@ -225,21 +228,24 @@ class Subscription {
     if (results[0] && !(results[0] instanceof Id)) {
       results = results.map(extractId);
     }
-    if (typeof override === 'undefined') {
-      var resultSet = results;
-      if (resultSet[0] && !(resultSet[0] instanceof Id)) {
-        resultSet = resultSet.map(extractId);
-      }
-      data = ObjectStore.getDataForIds(resultSet);
+    var resultSet = results;
+    if (resultSet[0] && !(resultSet[0] instanceof Id)) {
+      resultSet = resultSet.map(extractId);
     }
-    for (var oid in this.subscribers) {
-      var subscriber = this.subscribers[oid];
-      if (Array.isArray(data)) {
-        subscriber.onNext(this.originalQuery._observeOne ? data[0] : data);
-      } else if (data.error && subscriber.onError) {
-        subscriber.onError(data.error);
-      }
+    var data = ObjectStore.getDataForIds(resultSet);
+    if (this.originalQuery._observeOne) {
+      data = data[0];
     }
+    this._forEachSubscriber((subscriber) => subscriber.onNext(data));
+  }
+
+  /**
+   * Pass the specified error to each component subscribed to this query.
+   */
+  pushError(error: any) {
+    this._forEachSubscriber((subscriber) => {
+      subscriber.onError && subscriber.onError(error);
+    });
   }
 };
 
