@@ -26,10 +26,12 @@
 var Id = require('./Id');
 var Parse = require('./StubParse');
 
-type ParseRequestOptions = {
+export type ParseRequestOptions = {
   method: string;
   route: string;
   className: string;
+  data?: any;
+  objectId?: string;
 };
 
 import type * as MutationBatch from './MutationBatch';
