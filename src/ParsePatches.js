@@ -27,6 +27,7 @@
  */
 
 var flatten = require('./flatten');
+var Id = require('./Id');
 var LocalSubscriptions = require('./LocalSubscriptions');
 var Parse = require('./StubParse');
 var SubscriptionManager = require('./SubscriptionManager');
@@ -85,6 +86,8 @@ var patches = {
   },
 };
 
+var pointerMethods = ['equalTo', 'notEqualTo', 'containedIn', 'notContainedIn'];
+
 var ParsePatches = {
   applyPatches: function() {
     if (!Parse.Object.prototype.toPlainObject) {
@@ -96,6 +99,32 @@ var ParsePatches = {
     if (!Parse.Query.prototype.observeOne) {
       Parse.Query.prototype.observeOne = patches.observeOne;
     }
+    pointerMethods.forEach(function(method) {
+      var old = Parse.Query.prototype[method];
+      Parse.Query.prototype[method] = function(attr, value) {
+        var patchedValue = value;
+        if (Array.isArray(value)) {
+          patchedValue = value.map((v) => {
+            if (v && v.id && (v.id instanceof Id)) {
+              return {
+                __type: 'Pointer',
+                className: v.id.className,
+                objectId: v.id.objectId
+              };
+            }
+            return v;
+          });
+        } else if (value && value.id && (value.id instanceof Id)) {
+          patchedValue = {
+            __type: 'Pointer',
+            className: value.id.className,
+            objectId: value.id.objectId
+          };
+        }
+
+        return old.call(this, attr, patchedValue);
+      };
+    });
     Parse.User.prototype.signUp = patches.signUp;
     Parse.User.prototype.logIn = patches.logIn;
     Parse.User.prototype._linkWith = patches._linkWith;
