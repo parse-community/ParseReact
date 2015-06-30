@@ -156,6 +156,9 @@ function matchesQuery(
     if (className !== query.className) {
       return false;
     }
+    if (query._observeCount) {
+      return false;
+    }
     return matchesQuery(object, query._where);
   }
   for (var field in query) {

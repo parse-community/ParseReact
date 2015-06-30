@@ -62,6 +62,14 @@ var patches = {
   },
 
   /**
+   * The ParseReact equivalent to Parse.Query(...).count()
+   */
+  observeCount: function() {
+    this._observeCount = true;
+    return this;
+  },
+
+  /**
    * Patches for Parse.User to watch for user signup / login / logout
    */
   signUp: function(attrs, options) {
@@ -98,6 +106,9 @@ var ParsePatches = {
     }
     if (!Parse.Query.prototype.observeOne) {
       Parse.Query.prototype.observeOne = patches.observeOne;
+    }
+    if (!Parse.Query.prototype.observeCount) {
+      Parse.Query.prototype.observeCount = patches.observeCount;
     }
     pointerMethods.forEach(function(method) {
       var old = Parse.Query.prototype[method];

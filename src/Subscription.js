@@ -91,6 +91,7 @@ class Subscription {
   pending: boolean;
   subscribers: { [key: string]: Subscriber };
   resultSet: Array<Id | IdWithOrderingInfo>;
+  resultCount: ?number;
   observationCount: number;
 
   constructor(query: ParseQuery) {
@@ -102,6 +103,7 @@ class Subscription {
     this.subscribers = {};
     // The Ids of the objects returned by this Subscription's query
     this.resultSet = [];
+    this.resultCount = null;
 
     this.observationCount = 0;
 
@@ -118,9 +120,13 @@ class Subscription {
     var oid = 'o' + this.observationCount++;
     this.subscribers[oid] = callbacks;
 
-    var resultSet = this.resultSet.map(extractId);
-    var data = resultSet.length ? ObjectStore.getDataForIds(resultSet) : [];
-    callbacks.onNext(this.originalQuery._observeOne ? data[0] : data);
+    if (this.originalQuery._observeCount) {
+      callbacks.onNext(this.resultCount);
+    } else {
+      var resultSet = this.resultSet.map(extractId);
+      var data = resultSet.length ? ObjectStore.getDataForIds(resultSet) : [];
+      callbacks.onNext(this.originalQuery._observeOne ? data[0] : data);
+    }
 
     return oid;
   }
@@ -146,6 +152,19 @@ class Subscription {
    */
   issueQuery() {
     this.pending = true;
+    var errorHandler = (err) => {
+      this.pending = false;
+      this.pushError(err);
+    };
+
+    if (this.originalQuery._observeCount) {
+      this.originalQuery.count().then((result) => {
+        this.pending = false;
+        this.resultCount = result;
+        this._forEachSubscriber((subscriber) => subscriber.onNext(result));
+      }, errorHandler);
+      return;
+    }
     this.originalQuery.find().then((results) => {
       this.pending = false;
       this.resultSet = ObjectStore.storeQueryResults(
@@ -153,10 +172,7 @@ class Subscription {
         this.originalQuery
       );
       this.pushData();
-    }, (err) => {
-      this.pending = false;
-      this.pushError(err);
-    });
+    }, errorHandler);
   }
 
   /**
