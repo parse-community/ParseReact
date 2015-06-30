@@ -289,6 +289,20 @@ function matchesKeyConstraints(object, key, constraints) {
         var distance = compareTo.radiansTo(object[key]);
         var max = constraints.$maxDistance || Infinity;
         return distance <= max;
+      case '$within':
+        var southWest = compareTo.$box[0];
+        var northEast = compareTo.$box[1];
+        if (southWest.latitude > northEast.latitude ||
+            southWest.longitude > northEast.longitude) {
+          // Invalid box, crosses the date line
+          return false;
+        }
+        return (
+          object[key].latitude > southWest.latitude &&
+          object[key].latitude < northEast.latitude &&
+          object[key].longitude > southWest.longitude &&
+          object[key].longitude < northEast.longitude
+        );
       case '$options':
         // Not a query type, but a way to add options to $regex. Ignore and
         // avoid the default
