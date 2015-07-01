@@ -25,20 +25,18 @@
 
 var Parse = require('./StubParse');
 
-type ParseRequestOptions = {
-  method: string;
-  route: string;
-  className: string;
-};
+import type ParseRequestOptions from './MutationExecutor';
 
 class MutationBatch {
   static maxBatchSize: number;
 
   _requests: Array<ParseRequestOptions>;
+  _promises: Array<Parse.Promise>;
   addRequest: (options: ParseRequestOptions) => Parse.Promise;
 
   constructor() {
     this._requests = [];
+    this._promises = [];
     this.addRequest = this.addRequest.bind(this);
   }
 
@@ -51,13 +49,14 @@ class MutationBatch {
       throw new Error('Cannot batch more than ' + MutationBatch.maxBatchSize +
         ' requests at a time.');
     }
-    var promise = options.__promise = new Parse.Promise();
+    var promise = new Parse.Promise();
     this._requests.push(options);
+    this._promises.push(promise);
     return promise;
   }
 
   dispatch(): Parse.Promise {
-    var requests = this._requests.map(function (req) {
+    var requests = this._requests.map((req) => {
       var path = '/1/' + req.route;
       if (req.className) {
         path += '/' + req.className;
@@ -74,22 +73,20 @@ class MutationBatch {
     var batchRequest = {
       method: 'POST',
       route: 'batch',
-      data: {requests: requests},
+      data: {requests},
     };
-    var self = this;
-    return Parse._request(batchRequest).then(function(response) {
-      self._requests.forEach(function (req, i) {
+    return Parse._request(batchRequest).then((response) => {
+      this._requests.forEach((req, i) => {
         var result = response[i];
+        var promise = this._promises[i];
         if (result.success) {
-          req.__promise.resolve(result.success);
+          promise.resolve(result.success);
         } else if (result.error) {
-          req.__promise.reject(result.error);
+          promise.reject(result.error);
         }
       });
-    }, function(error) {
-      self._requests.forEach(function (req, i) {
-        req.__promise.reject(error);
-      });
+    }, (error) => {
+      this._promises.forEach((promise) => promise.reject(error));
       return Parse.Promise.error(error);
     });
   }
