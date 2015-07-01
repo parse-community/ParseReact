@@ -1,6 +1,6 @@
 /*
  *  Parse + React
- *  v0.4.1
+ *  v0.4.2
  */
 (function(f){if(typeof exports==="object"&&typeof module!=="undefined"){module.exports=f()}else if(typeof define==="function"&&define.amd){define([],f)}else{var g;if(typeof window!=="undefined"){g=window}else if(typeof global!=="undefined"){g=global}else if(typeof self!=="undefined"){g=self}else{g=this}g.ParseReact = f()}})(function(){var define,module,exports;return (function e(t,n,r){function s(o,u){if(!n[o]){if(!t[o]){var a=typeof require=="function"&&require;if(!u&&a)return a(o,!0);if(i)return i(o,!0);var f=new Error("Cannot find module '"+o+"'");throw f.code="MODULE_NOT_FOUND",f}var l=n[o]={exports:{}};t[o][0].call(l.exports,function(e){var n=t[o][1][e];return s(n?n:e)},l,l.exports,e,t,n,r)}return n[o].exports}var i=typeof require=="function"&&require;for(var o=0;o<r.length;o++)s(r[o]);return s})({1:[function(_dereq_,module,exports){
 /*
@@ -1606,6 +1606,7 @@ module.exports = ObjectStore;
  */
 
 var flatten = _dereq_('./flatten');
+var Id = _dereq_('./Id');
 var LocalSubscriptions = _dereq_('./LocalSubscriptions');
 var Parse = _dereq_('./StubParse');
 var SubscriptionManager = _dereq_('./SubscriptionManager');
@@ -1663,6 +1664,8 @@ var patches = {
     return promise;
   } };
 
+var pointerMethods = ['equalTo', 'notEqualTo', 'containedIn', 'notContainedIn'];
+
 var ParsePatches = {
   applyPatches: function applyPatches() {
     if (!Parse.Object.prototype.toPlainObject) {
@@ -1674,6 +1677,32 @@ var ParsePatches = {
     if (!Parse.Query.prototype.observeOne) {
       Parse.Query.prototype.observeOne = patches.observeOne;
     }
+    pointerMethods.forEach(function (method) {
+      var old = Parse.Query.prototype[method];
+      Parse.Query.prototype[method] = function (attr, value) {
+        var patchedValue = value;
+        if (Array.isArray(value)) {
+          patchedValue = value.map(function (v) {
+            if (v && v.id && v.id instanceof Id) {
+              return {
+                __type: 'Pointer',
+                className: v.id.className,
+                objectId: v.id.objectId
+              };
+            }
+            return v;
+          });
+        } else if (value && value.id && value.id instanceof Id) {
+          patchedValue = {
+            __type: 'Pointer',
+            className: value.id.className,
+            objectId: value.id.objectId
+          };
+        }
+
+        return old.call(this, attr, patchedValue);
+      };
+    });
     Parse.User.prototype.signUp = patches.signUp;
     Parse.User.prototype.logIn = patches.logIn;
     Parse.User.prototype._linkWith = patches._linkWith;
@@ -1683,7 +1712,7 @@ var ParsePatches = {
 
 module.exports = ParsePatches;
 
-},{"./LocalSubscriptions":5,"./StubParse":13,"./SubscriptionManager":15,"./flatten":18}],12:[function(_dereq_,module,exports){
+},{"./Id":4,"./LocalSubscriptions":5,"./StubParse":13,"./SubscriptionManager":15,"./flatten":18}],12:[function(_dereq_,module,exports){
 (function (process){
 /*
  *  Copyright (c) 2015, Parse, LLC. All rights reserved.
@@ -1969,8 +1998,24 @@ function matchesKeyConstraints(object, key, constraints) {
           return false;
         }
         break;
+      case '$nearSphere':
+        var distance = compareTo.radiansTo(object[key]);
+        var max = constraints.$maxDistance || Infinity;
+        return distance <= max;
+      case '$within':
+        var southWest = compareTo.$box[0];
+        var northEast = compareTo.$box[1];
+        if (southWest.latitude > northEast.latitude || southWest.longitude > northEast.longitude) {
+          // Invalid box, crosses the date line
+          return false;
+        }
+        return object[key].latitude > southWest.latitude && object[key].latitude < northEast.latitude && object[key].longitude > southWest.longitude && object[key].longitude < northEast.longitude;
       case '$options':
         // Not a query type, but a way to add options to $regex. Ignore and
+        // avoid the default
+        break;
+      case '$maxDistance':
+        // Not a query type, but a way to add a cap to $nearSphere. Ignore and
         // avoid the default
         break;
       case '$select':
