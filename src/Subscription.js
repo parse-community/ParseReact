@@ -100,9 +100,10 @@ class Subscription {
   }
 
   /**
-   * Registers a component with this subscription. When new data is available,
-   * `callback` will be called to send that data back to the component. `name`
-   * determines the prop to which that data is attached.
+   * Registers a subscriber with this subscription.
+   *
+   * `callbacks` is an observer/subscriber that will be notified when
+   * new data is available.
    */
   addSubscriber(callbacks: Subscriber): string {
     var oid = 'o' + this.observationCount++;
@@ -119,9 +120,7 @@ class Subscription {
   }
 
   /**
-   * Removes a component from this subscription. The callback passed into the
-   * function will be dissociated from the query, and the function will return
-   * the remaining number of subscribers.
+   * Removes a subscriber from this subscription.
    */
   removeSubscriber(observationId: string): number {
     delete this.subscribers[observationId];
