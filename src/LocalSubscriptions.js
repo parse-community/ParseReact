@@ -28,6 +28,8 @@ var Id = require('./Id');
 var ObjectStore = require('./ObjectStore');
 var Parse = require('./StubParse');
 
+import type { Subscriber } from './Subscription';
+
 /**
  * Local Subscriptions allow applications to subscribe to local objects, such
  * as the current user. React components can watch these for changes and
@@ -38,9 +40,7 @@ var currentUser = {
   subscribers: {},
   observerCount: 0,
 
-  subscribe: function(
-      callbacks:{ onNext: (value: any) => void; onError?: (error: any) => void }
-    ): { dispose: () => void } {
+  subscribe: function(callbacks: Subscriber): { dispose: () => void } {
     var observerId = 'o' + this.observerCount++;
     this.subscribers[observerId] = callbacks;
     var id;

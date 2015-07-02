@@ -30,7 +30,7 @@ type ParseObject = {
   id: Id
 };
 
-type Subscriber = {
+export type Subscriber = {
   onNext: (value: any) => void;
   onError?: (error: any) => void;
 };

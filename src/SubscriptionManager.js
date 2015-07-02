@@ -30,6 +30,8 @@ var keysFromHash = QueryTools.keysFromHash;
 var queryHash = QueryTools.queryHash;
 var Subscription = require('./Subscription');
 
+import type { Subscriber } from './Subscription';
+
 // Mapping of query hashes to subscriptions
 var subscriptions = {};
 // Tree of the attributes queries depend on, leading to their hashes
@@ -42,7 +44,7 @@ var queryFamilies = {};
  */
 function subscribeToQuery(
     query: any,
-    callbacks: { onNext: (value: any) => void; onError?: (error: any) => void }
+    callbacks: Subscriber
   ): { refresh: () => void; dispose: () => void } {
   var hash = queryHash(query);
   var subscription = subscriptions[hash];
