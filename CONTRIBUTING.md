@@ -1,6 +1,8 @@
 # Contributing to Parse + React
 We want to make contributing to this project as easy and transparent as possible.
 
+If you're looking to get started, but want to ease yourself into the codebase, look for issues tagged [good first bug](https://github.com/ParsePlatform/ParseReact/labels/good%20first%20bug). These are simple yet valuable tasks that should be easy to get started with.
+
 ## Pull Requests
 We actively welcome your pull requests.
 
@@ -23,7 +25,9 @@ Facebook has a [bounty program](https://www.facebook.com/whitehat/) for the safe
 
 ## Coding Style
 * Most importantly, match the existing code style as much as possible.
-* We rely on JSHint to standardize much of the formatting, such as keeping lines within 80 characters
+* We use [Flow](http://flowtype.org/) and ES6 for this codebase. Use modern syntax whenever possible.
+* Keep lines within 80 characters.
+* Always end lines with semicolons.
 
 ## License
 By contributing to Parse + React, you agree that your contributions will be licensed under its license.
