@@ -111,8 +111,8 @@ export function issueMutation(mutation: Mutation, options: { [key: string]: bool
       if (mutation.action === 'CREATE') {
         // Make sure the local object is removed from any result sets
         for (var i = 0; i < subscribers.length; i++) {
-          var subscriber = SubscriptionManager.getSubscription(subscribers[i]);
-          subscriber.removeResult(target);
+          var subscription = SubscriptionManager.getSubscription(subscribers[i]);
+          subscription.removeResult(target);
         }
         ObjectStore.destroyMutationStack(target);
       } else {
@@ -143,12 +143,12 @@ function pushUpdates(subscribers: Array<string>, changes: { id: Id; latest: any;
   if (changes.latest === null) {
     // Pushing a Destroy action. Remove it from all current subscribers
     for (i = 0; i < subscribers.length; i++) {
-      subscriber = SubscriptionManager.getSubscription(subscribers[i]);
-      if (!subscriber) {
+      subscription = SubscriptionManager.getSubscription(subscribers[i]);
+      if (!subscription) {
         throw new Error('Object is attached to a nonexistent subscription');
       }
-      subscriber.removeResult(changes.id);
-    }
+      subscription.removeResult(changes.id);
+    };
     return null;
   }
   // For all current subscribers, check if the object still matches the query.
@@ -156,19 +156,19 @@ function pushUpdates(subscribers: Array<string>, changes: { id: Id; latest: any;
   var visited = {};
   for (i = 0; i < subscribers.length; i++) {
     visited[subscribers[i]] = true;
-    subscriber = SubscriptionManager.getSubscription(subscribers[i]);
-    if (QueryTools.matchesQuery(changes.latest, subscriber.originalQuery)) {
+    subscription = SubscriptionManager.getSubscription(subscribers[i]);
+    if (QueryTools.matchesQuery(changes.latest, subscription.originalQuery)) {
       if (changes.id.toString() !== changes.latest.id.toString()) {
         // It's a Create method
-        subscriber.removeResult(changes.id, true);
+        subscription.removeResult(changes.id, true);
         ObjectStore.removeSubscriber(changes.id, subscribers[i]);
-        subscriber.addResult(changes.latest);
+        subscription.addResult(changes.latest);
         ObjectStore.addSubscriber(changes.latest.id, subscribers[i]);
       } else {
-        subscriber.pushData();
+        subscription.pushData();
       }
     } else {
-      subscriber.removeResult(changes.id);
+      subscription.removeResult(changes.id);
       ObjectStore.removeSubscriber(changes.id, subscribers[i]);
     }
   }
@@ -180,9 +180,9 @@ function pushUpdates(subscribers: Array<string>, changes: { id: Id; latest: any;
     if (visited[potentials[i]]) {
       continue;
     }
-    subscriber = SubscriptionManager.getSubscription(potentials[i]);
-    if (QueryTools.matchesQuery(changes.latest, subscriber.originalQuery)) {
-      subscriber.addResult(changes.latest);
+    subscription = SubscriptionManager.getSubscription(potentials[i]);
+    if (QueryTools.matchesQuery(changes.latest, subscription.originalQuery)) {
+      subscription.addResult(changes.latest);
       ObjectStore.addSubscriber(changes.latest.id, potentials[i]);
     }
   }
