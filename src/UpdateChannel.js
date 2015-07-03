@@ -110,10 +110,10 @@ export function issueMutation(mutation: Mutation, options: { [key: string]: bool
       var subscribers = ObjectStore.fetchSubscribers(target);
       if (mutation.action === 'CREATE') {
         // Make sure the local object is removed from any result sets
-        for (var i = 0; i < subscribers.length; i++) {
-          var subscription = SubscriptionManager.getSubscription(subscribers[i]);
+        subscribers.forEach((subscriber) => {
+          var subscription = SubscriptionManager.getSubscription(subscriber);
           subscription.removeResult(target);
-        }
+        });
         ObjectStore.destroyMutationStack(target);
       } else {
         var noop = new Delta(target, {});
@@ -139,53 +139,51 @@ export function issueMutation(mutation: Mutation, options: { [key: string]: bool
  */
 function pushUpdates(subscribers: Array<string>, changes: { id: Id; latest: any; fields: Array<string> }) {
   var i;
-  var subscriber;
   if (changes.latest === null) {
     // Pushing a Destroy action. Remove it from all current subscribers
-    for (i = 0; i < subscribers.length; i++) {
-      subscription = SubscriptionManager.getSubscription(subscribers[i]);
+    subscribers.forEach((subscriber) => {
+      var subscription = SubscriptionManager.getSubscription(subscriber);
       if (!subscription) {
         throw new Error('Object is attached to a nonexistent subscription');
       }
       subscription.removeResult(changes.id);
-    };
+    });
     return null;
   }
   // For all current subscribers, check if the object still matches the query.
   // Then, using the changed keys, find any queries we might now match.
   var visited = {};
-  for (i = 0; i < subscribers.length; i++) {
-    visited[subscribers[i]] = true;
-    subscription = SubscriptionManager.getSubscription(subscribers[i]);
+  subscribers.forEach((subscriber) => {
+    visited[subscriber] = true;
+    var subscription = SubscriptionManager.getSubscription(subscriber);
     if (QueryTools.matchesQuery(changes.latest, subscription.originalQuery)) {
       if (changes.id.toString() !== changes.latest.id.toString()) {
         // It's a Create method
         subscription.removeResult(changes.id, true);
-        ObjectStore.removeSubscriber(changes.id, subscribers[i]);
+        ObjectStore.removeSubscriber(changes.id, subscriber);
         subscription.addResult(changes.latest);
-        ObjectStore.addSubscriber(changes.latest.id, subscribers[i]);
+        ObjectStore.addSubscriber(changes.latest.id, subscriber);
       } else {
         subscription.pushData();
       }
     } else {
       subscription.removeResult(changes.id);
-      ObjectStore.removeSubscriber(changes.id, subscribers[i]);
+      ObjectStore.removeSubscriber(changes.id, subscriber);
     }
-  }
-  var potentials = SubscriptionManager.queriesForFields(
+  });
+  SubscriptionManager.queriesForFields(
     changes.latest.id.className,
     changes.fields
-  );
-  for (i = 0; i < potentials.length; i++) {
-    if (visited[potentials[i]]) {
-      continue;
+  ).forEach((potential) => {
+    if (visited[potential]) {
+      return;
     }
-    subscription = SubscriptionManager.getSubscription(potentials[i]);
+    var subscription = SubscriptionManager.getSubscription(potential);
     if (QueryTools.matchesQuery(changes.latest, subscription.originalQuery)) {
       subscription.addResult(changes.latest);
-      ObjectStore.addSubscriber(changes.latest.id, potentials[i]);
+      ObjectStore.addSubscriber(changes.latest.id, potential);
     }
-  }
+  });
   if (changes.latest.id.className === '_User') {
     var currentUser = Parse.User.current();
     if (currentUser && changes.latest.id.objectId === currentUser.id) {
