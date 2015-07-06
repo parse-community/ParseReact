@@ -50,38 +50,23 @@ export function issueMutation(mutation: Mutation, options: { [key: string]: bool
 
   if (!options.waitForServer) {
     // Set up the optimistic mutation
-    var subscribers = [];
-    var updates;
-    var latest;
+    executionId = ObjectStore.stackMutation(target, mutation);
 
-    if (mutation.action === 'CREATE') {
-      executionId = ObjectStore.stackMutation(target, mutation);
-      latest = ObjectStore.getLatest(target);
-      updates = {
-        id: target,
-        latest: latest,
-        fields: Object.keys(latest)
-      };
-    } else {
-      executionId = ObjectStore.stackMutation(target, mutation);
+    var subscribers = [];
+    if (mutation.action !== 'CREATE') {
       subscribers = ObjectStore.fetchSubscribers(target);
-      if (mutation.action === 'DESTROY') {
-        updates = {
-          id: target,
-          latest: null,
-          fields: []
-        };
-      } else {
-        latest = ObjectStore.getLatest(target);
-        updates = {
-          id: target,
-          latest: latest,
-          fields: Object.keys(latest)
-        };
-      }
+    }
+    var latest = null;
+    if (mutation.action !== 'DESTROY') {
+      latest = ObjectStore.getLatest(target);
     }
 
     // Push the latest object to matching queries
+    var updates = {
+      id: target,
+      latest,
+      fields: latest ? Object.keys(latest) : []
+    };
     pushUpdates(subscribers, updates);
   }
 
@@ -98,12 +83,11 @@ export function issueMutation(mutation: Mutation, options: { [key: string]: bool
     if (!options.waitForServer) {
       // Replace the current entry with a Delta
       changes = ObjectStore.resolveMutation(target, executionId, delta);
-      p.resolve(pushUpdates(subscribers, changes));
     } else {
       // Apply it to the data store
       changes = ObjectStore.commitDelta(delta);
-      p.resolve(pushUpdates(subscribers, changes));
     }
+    p.resolve(pushUpdates(subscribers, changes));
   }, function(err) {
     if (!options.waitForServer) {
       // Roll back optimistic changes by deleting the entry from the queue
