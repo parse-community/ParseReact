@@ -23,8 +23,6 @@
 
 'use strict';
 
-import type { Mutation } from './Mutation';
-
 var Delta = require('./Delta');
 var Id = require('./Id');
 var LocalSubscriptions = require('./LocalSubscriptions');
@@ -33,6 +31,9 @@ var ObjectStore = require('./ObjectStore');
 var Parse = require('./StubParse');
 var QueryTools = require('./QueryTools');
 var SubscriptionManager = require('./SubscriptionManager');
+
+import type { Mutation } from './Mutation';
+import type * as MutationBatch from './MutationBatch';
 
 var localCount = 0;
 
@@ -49,69 +50,70 @@ export function issueMutation(mutation: Mutation, options: { [key: string]: bool
     new Id(mutation.target, 'local-' + (localCount++));
 
   if (!options.waitForServer) {
-    // Set up the optimistic mutation
-    executionId = ObjectStore.stackMutation(target, mutation);
-
-    var subscribers = [];
-    if (mutation.action !== 'CREATE') {
-      subscribers = ObjectStore.fetchSubscribers(target);
-    }
-    var latest = null;
-    if (mutation.action !== 'DESTROY') {
-      latest = ObjectStore.getLatest(target);
-    }
-
-    // Push the latest object to matching queries
-    var updates = {
-      id: target,
-      latest,
-      fields: latest ? Object.keys(latest) : []
-    };
-    pushUpdates(subscribers, updates);
+    return performOptimisticMutation(target, mutation, options.batch);
   }
 
-  var p = new Parse.Promise();
-  MutationExecutor.execute(
-    mutation.action,
-    mutation.target,
-    mutation.data,
-    options.batch
-  ).then(function(result) {
-    var changes;
+  return MutationExecutor.execute(mutation, options.batch).then((result) => {
     var subscribers = ObjectStore.fetchSubscribers(target);
     var delta = mutation.generateDelta(result);
-    if (!options.waitForServer) {
-      // Replace the current entry with a Delta
-      changes = ObjectStore.resolveMutation(target, executionId, delta);
-    } else {
-      // Apply it to the data store
-      changes = ObjectStore.commitDelta(delta);
-    }
+    // Apply it to the data store
+    var changes = ObjectStore.commitDelta(delta);
+   return pushUpdates(subscribers, changes);
+  });
+}
+
+function performOptimisticMutation(
+  target: Id,
+  mutation: Mutation,
+  batch: ?MutationBatch
+) {
+  var executionId = ObjectStore.stackMutation(target, mutation);
+
+  var subscribers = [];
+  if (mutation.action !== 'CREATE') {
+    subscribers = ObjectStore.fetchSubscribers(target);
+  }
+  var latest = null;
+  if (mutation.action !== 'DESTROY') {
+    latest = ObjectStore.getLatest(target);
+  }
+
+  // Push the latest object to matching queries
+  var updates = {
+    id: target,
+    latest,
+    fields: latest ? Object.keys(latest) : []
+  };
+  pushUpdates(subscribers, updates);
+
+  var p = new Parse.Promise();
+  MutationExecutor.execute(mutation, batch).then((result) => {
+    var subscribers = ObjectStore.fetchSubscribers(target);
+    var delta = mutation.generateDelta(result);
+    // Replace the current entry with a Delta
+    var changes = ObjectStore.resolveMutation(target, executionId, delta);
     p.resolve(pushUpdates(subscribers, changes));
-  }, function(err) {
-    if (!options.waitForServer) {
-      // Roll back optimistic changes by deleting the entry from the queue
-      var subscribers = ObjectStore.fetchSubscribers(target);
-      if (mutation.action === 'CREATE') {
-        // Make sure the local object is removed from any result sets
-        subscribers.forEach((subscriber) => {
-          var subscription = SubscriptionManager.getSubscription(subscriber);
-          subscription.removeResult(target);
-        });
-        ObjectStore.destroyMutationStack(target);
-      } else {
-        var noop = new Delta(target, {});
-        var changes = ObjectStore.resolveMutation(
-          target,
-          executionId,
-          noop
-        );
-        pushUpdates(subscribers, changes);
-      }
+  }, (err) => {
+    // Roll back optimistic changes by deleting the entry from the queue
+    var subscribers = ObjectStore.fetchSubscribers(target);
+    if (mutation.action === 'CREATE') {
+      // Make sure the local object is removed from any result sets
+      subscribers.forEach((subscriber) => {
+        var subscription = SubscriptionManager.getSubscription(subscriber);
+        subscription.removeResult(target);
+      });
+      ObjectStore.destroyMutationStack(target);
+    } else {
+      var noop = new Delta(target, {});
+      var changes = ObjectStore.resolveMutation(
+        target,
+        executionId,
+        noop
+      );
+      pushUpdates(subscribers, changes);
     }
     p.reject(err);
   });
-
   return p;
 }
 
@@ -121,7 +123,7 @@ export function issueMutation(mutation: Mutation, options: { [key: string]: bool
  * fetch a list of potential new subscribers using the changed fields, and add
  * the object to the result sets of any queries that now match.
  */
-function pushUpdates(subscribers: Array<string>, changes: { id: Id; latest: any; fields: Array<string> }) {
+function pushUpdates(subscribers: Array<string>, changes: { id: Id; latest: any; fields?: Array<string> }) {
   var i;
   if (changes.latest === null) {
     // Pushing a Destroy action. Remove it from all current subscribers

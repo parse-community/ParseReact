@@ -34,6 +34,7 @@ export type ParseRequestOptions = {
   objectId?: string;
 };
 
+import type { Mutation } from './Mutation';
 import type * as MutationBatch from './MutationBatch';
 
 
@@ -112,16 +113,16 @@ function sendRequest(options: ParseRequestOptions): Parse.Promise {
 }
 
 function execute(
-  action: string,
-  target: Id|string,
-  data: any,
+  mutation: Mutation,
   batch: ?MutationBatch
 ): Parse.Promise {
+  var target = mutation.target;
+  var data = mutation.data;
   var className = (typeof target === 'string') ? target : target.className;
   var objectId = (typeof target === 'string') ? '' : target.objectId;
   var payload;
   var request = batch ? batch.addRequest : sendRequest;
-  switch (action) {
+  switch (mutation.action) {
     case 'CREATE':
       return request({
         method: 'POST',
@@ -233,7 +234,7 @@ function execute(
         data: payload
       });
   }
-  throw new TypeError('Invalid Mutation action: ' + action);
+  throw new TypeError('Invalid Mutation action: ' + mutation.action);
 }
 
 var MutationExecutor: any = {
