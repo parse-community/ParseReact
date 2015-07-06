@@ -41,7 +41,7 @@ import type * as MutationBatch from './MutationBatch';
 var toString = Object.prototype.toString;
 // Special version of Parse._encode to handle our unique representations of
 // pointers
-function encode(data, seen?) {
+function encode(data: any, seen?: Array<any>): any {
   if (!seen) {
     seen = [];
   }
@@ -237,12 +237,7 @@ function execute(
   throw new TypeError('Invalid Mutation action: ' + mutation.action);
 }
 
-var MutationExecutor: any = {
-  execute: execute,
-};
-
+module.exports.execute = execute;
 if (typeof process !== 'undefined' && process.env.NODE_ENV === 'test') {
-  MutationExecutor.encode = encode;
+  module.exports.encode = encode;
 }
-
-module.exports = MutationExecutor;

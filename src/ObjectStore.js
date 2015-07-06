@@ -365,7 +365,7 @@ function getDataForIds(ids: Id | Array<Id>): Array<FlattenedObjectData> {
 /**
  * Fetch objects from the store, converting pointers to objects where possible
  */
-function deepFetch(id: Id, seen?: Array<string>) {
+function deepFetch(id: Id, seen?: Array<string>): ?FlattenedObjectData {
   if (!store[id]) {
     return null;
   }
@@ -392,7 +392,7 @@ function deepFetch(id: Id, seen?: Array<string>) {
 /**
  * Calculate the result of applying all Mutations to an object.
  */
-function getLatest(id: Id) {
+function getLatest(id: Id): ?FlattenedObjectData {
   if (pendingMutations[id] && pendingMutations[id].length > 0) {
     var base = {};
     var mutation;
@@ -431,26 +431,22 @@ function getLatest(id: Id) {
   return store[id] ? deepFetch(id) : null;
 }
 
-var ObjectStore: { [key: string]: any } = {
-  storeObject: storeObject,
-  removeObject: removeObject,
-  addSubscriber: addSubscriber,
-  removeSubscriber: removeSubscriber,
-  fetchSubscribers: fetchSubscribers,
-  stackMutation: stackMutation,
-  destroyMutationStack: destroyMutationStack,
-  resolveMutation: resolveMutation,
-  commitDelta: commitDelta,
-  storeQueryResults: storeQueryResults,
-  getDataForIds: getDataForIds,
-  deepFetch: deepFetch,
-  getLatest: getLatest
-};
+module.exports.storeObject = storeObject;
+module.exports.removeObject = removeObject;
+module.exports.addSubscriber = addSubscriber;
+module.exports.removeSubscriber = removeSubscriber;
+module.exports.fetchSubscribers = fetchSubscribers;
+module.exports.stackMutation = stackMutation;
+module.exports.destroyMutationStack = destroyMutationStack;
+module.exports.resolveMutation = resolveMutation;
+module.exports.commitDelta = commitDelta;
+module.exports.storeQueryResults = storeQueryResults;
+module.exports.getDataForIds = getDataForIds;
+module.exports.deepFetch = deepFetch;
+module.exports.getLatest = getLatest;
 
 if (typeof process !== 'undefined' && process.env.NODE_ENV === 'test') {
   // Expose the raw storage
-  ObjectStore._rawStore = store;
-  ObjectStore._rawMutations = pendingMutations;
+  module.exports._rawStore = store;
+  module.exports._rawMutations = pendingMutations;
 }
-
-module.exports = ObjectStore;

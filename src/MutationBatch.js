@@ -25,7 +25,7 @@
 
 var Parse = require('./StubParse');
 
-import type ParseRequestOptions from './MutationExecutor';
+import type { ParseRequestOptions } from './MutationExecutor';
 
 class MutationBatch {
   static maxBatchSize: number;
