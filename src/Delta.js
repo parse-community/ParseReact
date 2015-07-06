@@ -80,8 +80,6 @@ class Delta {
     for (var attr in source.map) {
       this.map[attr] = source.map[attr];
     }
-
-    return this;
   }
 }
 
