@@ -35,6 +35,7 @@ export type IdWithOrderingInfo = {
   id: Id;
   ordering: OrderingInfo;
 };
+export type FlattenedObjectData = { [attr: string]: any };
 
 /**
  * ObjectStore is a local cache for Parse Objects. It stores the last known
@@ -48,7 +49,7 @@ export type IdWithOrderingInfo = {
 // queries subscribed to the object.
 var store: {
   [id: Id]: {
-    data: { [attr: string]: any };
+    data: FlattenedObjectData;
     queries: { [hash: string]: boolean }
   }
 } = {};
@@ -72,7 +73,7 @@ var mutationCount = 0;
  * storeObject: takes a flattened object as the single argument, and places it
  * in the Store, indexed by its Id.
  */
-function storeObject(data: { [attr: string]: any }): Id {
+function storeObject(data: FlattenedObjectData): Id {
   if (!(data.id instanceof Id)) {
     throw new Error('Cannot store an object without an Id');
   }
@@ -344,7 +345,7 @@ function storeQueryResults(
  * Given a list of object Ids, fetches the latest data for each object
  * and returns the results as an array of shallow copies.
  */
-function getDataForIds(ids: Id | Array<Id>): Array<any> {
+function getDataForIds(ids: Id | Array<Id>): Array<FlattenedObjectData> {
   if (!Array.isArray(ids)) {
     ids = [ids];
   }
@@ -376,7 +377,7 @@ function deepFetch(id: Id, seen?: Array<string>) {
   var seenChildren = [];
   for (var attr in source) {
     var sourceVal = source[attr];
-    if ( sourceVal && typeof sourceVal === 'object' && sourceVal.__type === 'Pointer') {
+    if (sourceVal && typeof sourceVal === 'object' && sourceVal.__type === 'Pointer') {
       var childId = new Id(sourceVal.className, sourceVal.objectId);
       if (seen.indexOf(childId.toString()) < 0 && store[childId]) {
         seenChildren = seenChildren.concat([childId.toString()]);

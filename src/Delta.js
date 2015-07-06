@@ -25,6 +25,8 @@
 
 var Id = require('./Id');
 
+import type { FlattenedObjectData } from './ObjectStore';
+
 /**
  * A Delta represents a change that has been verified by the server, but has
  * not yet been merged into the "Last True State" (typically because some
@@ -39,10 +41,10 @@ class Delta {
   destroy: ?boolean;
 
   constructor(
-      id: Id,
-      data: { [key: string]: any },
-      options?: { [key: string]: boolean }
-    ) {
+    id: Id,
+    data: FlattenedObjectData,
+    options?: { [key: string]: boolean }
+  ) {
     if (!(id instanceof Id)) {
       throw new TypeError('Cannot create a Delta with an invalid target Id');
     }
