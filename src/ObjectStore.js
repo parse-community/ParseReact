@@ -23,12 +23,18 @@
 
 'use strict';
 
-import type * as Delta from './Delta';
-import type { Mutation } from './Mutation';
-
 var flatten = require('./flatten');
 var Id = require('./Id');
 var queryHash = require('./QueryTools').queryHash;
+
+import type * as Delta from './Delta';
+import type { Mutation } from './Mutation';
+
+export type OrderingInfo = { [key: string]: any };
+export type IdWithOrderingInfo = {
+  id: Id;
+  ordering: OrderingInfo;
+};
 
 /**
  * ObjectStore is a local cache for Parse Objects. It stores the last known
@@ -274,8 +280,10 @@ function commitDelta(delta: Delta):
  * Returns an array of object Ids, or an array of maps containing Ids and query-
  * specific ordering information.
  */
-function storeQueryResults(results: Array<ParseObject> | ParseObject, query: ParseQuery):
-    Array<Id | { id: Id; ordering: any }> {
+function storeQueryResults(
+  results: Array<ParseObject> | ParseObject,
+  query: ParseQuery
+): Array<Id | IdWithOrderingInfo> {
   var hash = queryHash(query);
   if (!Array.isArray(results)) {
     results = [results];

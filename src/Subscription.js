@@ -26,6 +26,11 @@
 var Id = require('./Id');
 var ObjectStore = require('./ObjectStore');
 
+import type {
+  IdWithOrderingInfo,
+  OrderingInfo,
+} from './ObjectStore';
+
 type ParseObject = {
   id: Id
 };
@@ -48,8 +53,8 @@ export type Subscriber = {
  * When we store ordering information alongside Ids, this method can map over
  * the array to extract each Id.
  */
-function extractId(result) {
-  return result.id;
+function extractId(result: Id | IdWithOrderingInfo): Id {
+  return result instanceof Id ? result : result.id;
 }
 
 /**
@@ -58,7 +63,11 @@ function extractId(result) {
  * it should come after, return 1. If the two are equivalent in ordering, the
  * function returns 0.
  */
-function compareObjectOrder(queryOrder, object, orderInfo) {
+function compareObjectOrder(
+  queryOrder: Array<string>,
+  object: ParseObject,
+  orderInfo: OrderingInfo
+): number {
   for (var i = 0; i < queryOrder.length; i++) {
     var column = queryOrder[i];
     var multiplier = 1;
@@ -81,7 +90,7 @@ class Subscription {
   originalQuery: ParseQuery;
   pending: boolean;
   subscribers: { [key: string]: Subscriber };
-  resultSet: Array<any>;
+  resultSet: Array<Id | IdWithOrderingInfo>;
   observationCount: number;
 
   constructor(query: ParseQuery) {
@@ -109,10 +118,7 @@ class Subscription {
     var oid = 'o' + this.observationCount++;
     this.subscribers[oid] = callbacks;
 
-    var resultSet = this.resultSet;
-    if (resultSet[0] && !(resultSet[0] instanceof Id)) {
-      resultSet = resultSet.map(extractId);
-    }
+    var resultSet = this.resultSet.map(extractId);
     var data = resultSet.length ? ObjectStore.getDataForIds(resultSet) : [];
     callbacks.onNext(this.originalQuery._observeOne ? data[0] : data);
 
@@ -168,16 +174,21 @@ class Subscription {
       var index = 0;
       var orderColumns = this.originalQuery._order;
       while (index < this.resultSet.length) {
+        // Satisfy Flow by ensuring that the current result is indeed of the
+        // IdWithOrderingInfo type, and not a plain Id.
+        var result = this.resultSet[index];
+        if (result instanceof Id) {
+          throw new Error('Encountered result without ordering info.');
+        }
         var compare = compareObjectOrder(
           orderColumns,
           object,
-          this.resultSet[index].ordering
+          result.ordering
         );
-        if (compare > 0) {
-          index++;
-        } else {
+        if (compare <= 0) {
           break;
         }
+        index++;
       }
       var ordering = {};
       for (var i = 0; i < orderColumns.length; i++) {
@@ -224,13 +235,7 @@ class Subscription {
     if (this.originalQuery._limit > -1) {
       results = results.slice(0, this.originalQuery._limit);
     }
-    if (results[0] && !(results[0] instanceof Id)) {
-      results = results.map(extractId);
-    }
-    var resultSet = results;
-    if (resultSet[0] && !(resultSet[0] instanceof Id)) {
-      resultSet = resultSet.map(extractId);
-    }
+    var resultSet = results.map(extractId);
     var data = ObjectStore.getDataForIds(resultSet);
     if (this.originalQuery._observeOne) {
       data = data[0];
