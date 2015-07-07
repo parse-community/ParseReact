@@ -65,6 +65,21 @@ function validateColumn(column: string) {
 }
 
 function validateFields(data) {
+
+  function hasMutlipleGeoPoints() {
+    var geoPointCount = 0;
+    for (var prop in data) {
+      if (data.hasOwnProperty(prop) &&
+          (data[prop] instanceof Parse.GeoPoint)) {
+          ++geoPointCount;
+          if (geoPointCount > 1) {
+            return true;
+          }
+      }
+    }
+    return false;
+  };
+
   if (data.hasOwnProperty('objectId')) {
     warning('Ignoring reserved field: objectId');
     delete data.objectId;
@@ -80,6 +95,9 @@ function validateFields(data) {
   if (data.hasOwnProperty('updatedAt')) {
     warning('Ignoring reserved field: updatedAt');
     delete data.updatedAt;
+  }
+  if (hasMutlipleGeoPoints()) {
+    throw Error('There can only be 1 GeoPoint when mutating an object.');
   }
 }
 
