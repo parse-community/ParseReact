@@ -48,6 +48,16 @@ describe('Mutation Generators', function() {
     expect(result instanceof Parse.Promise).toBe(true);
   });
 
+  it("fails to generate a Set Mutation with multiple GeoPoints", function () {
+      expect(function () {
+        var id = new Id('Klass', '01');
+        Mutation.Set(id, {
+          g1: new Parse.GeoPoint(),
+          g2: new Parse.GeoPoint(),
+        });
+      }).toThrow('There can only be 1 GeoPoint when mutating an object.');
+  });
+
   it('generates an Unset Mutation', function() {
     var id = new Id('Klass', 'O1');
     var m = Mutation.Unset(id, 'no_more');

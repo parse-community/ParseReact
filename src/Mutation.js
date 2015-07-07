@@ -65,6 +65,18 @@ function validateColumn(column: string) {
 }
 
 function validateFields(data) {
+    // Check for multiple GeoPoints.
+  var geoPointCount = 0;
+  for (var prop in data) {
+    if (data.hasOwnProperty(prop) &&
+        (data[prop] instanceof Parse.GeoPoint)) {
+        ++geoPointCount;
+        if (geoPointCount > 1) {
+          throw Error('There can only be 1 GeoPoint when mutating an object.');
+        }
+    }
+  }
+
   if (data.hasOwnProperty('objectId')) {
     warning('Ignoring reserved field: objectId');
     delete data.objectId;
