@@ -55,7 +55,7 @@ describe('Mutation Generators', function() {
           g1: new Parse.GeoPoint(),
           g2: new Parse.GeoPoint(),
         });
-      }).toThrow();
+      }).toThrow('There can only be 1 GeoPoint when mutating an object.');
   });
 
   it('generates an Unset Mutation', function() {
