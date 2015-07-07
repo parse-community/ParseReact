@@ -36,6 +36,11 @@ export type IdWithOrderingInfo = {
   ordering: OrderingInfo;
 };
 export type FlattenedObjectData = { [attr: string]: any };
+export type ObjectChangeDescriptor = {
+  id: Id;
+  latest: any;  // TODO: this should really be FlattenedObjectData
+  fields?: Array<string>;
+};
 
 /**
  * ObjectStore is a local cache for Parse Objects. It stores the last known
@@ -175,7 +180,11 @@ function destroyMutationStack(target: Id) {
  * Returns the latest object state and an array of keys that changed, or null
  * in the case of a Destroy
  */
-function resolveMutation(target: Id, payloadId: number, delta: Delta): { id: Id; latest: any; fields?: Array<string> } {
+function resolveMutation(
+  target: Id,
+  payloadId: number,
+  delta: Delta
+): ObjectChangeDescriptor {
   var stack = pendingMutations[target];
   var i;
   for (i = 0; i < stack.length; i++) {
@@ -226,8 +235,7 @@ function resolveMutation(target: Id, payloadId: number, delta: Delta): { id: Id;
  * Returns the latest object state and an array of keys that changed, or null
  * in the case of a Destroy
  */
-function commitDelta(delta: Delta):
-    { id: Id; latest: any; fields?: Array<string> } {
+function commitDelta(delta: Delta): ObjectChangeDescriptor {
   var id = delta.id;
   if (delta.destroy) {
     if (store[id]) {

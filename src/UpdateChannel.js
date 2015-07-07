@@ -123,7 +123,13 @@ function performOptimisticMutation(
  * fetch a list of potential new subscribers using the changed fields, and add
  * the object to the result sets of any queries that now match.
  */
-function pushUpdates(subscribers: Array<string>, changes: { id: Id; latest: any; fields?: Array<string> }) {
+function pushUpdates(
+  subscribers: Array<string>,
+  // TODO: we really want to use the ObjectChangeDescriptor type alias from
+  // ObjectStore here, but importing it will cause a bunch of additional Flow
+  // checks to happen that we're not ready for yet.
+  changes: { id: Id; latest: any; fields?: Array<string> }
+) {
   var i;
   if (changes.latest === null) {
     // Pushing a Destroy action. Remove it from all current subscribers
