@@ -178,7 +178,3 @@ function pushUpdates(subscribers: Array<string>, changes: { id: Id; latest: any;
   }
   return changes.latest;
 }
-
-module.exports = {
-  issueMutation: issueMutation
-};
