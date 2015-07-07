@@ -23,12 +23,24 @@
 
 'use strict';
 
-import type * as Delta from './Delta';
-import type { Mutation } from './Mutation';
-
 var flatten = require('./flatten');
 var Id = require('./Id');
 var queryHash = require('./QueryTools').queryHash;
+
+import type * as Delta from './Delta';
+import type { Mutation } from './Mutation';
+
+export type OrderingInfo = { [key: string]: any };
+export type IdWithOrderingInfo = {
+  id: Id;
+  ordering: OrderingInfo;
+};
+export type FlattenedObjectData = { [attr: string]: any };
+export type ObjectChangeDescriptor = {
+  id: Id;
+  latest: any;  // TODO: this should really be FlattenedObjectData
+  fields?: Array<string>;
+};
 
 /**
  * ObjectStore is a local cache for Parse Objects. It stores the last known
@@ -42,7 +54,7 @@ var queryHash = require('./QueryTools').queryHash;
 // queries subscribed to the object.
 var store: {
   [id: Id]: {
-    data: { [attr: string]: any };
+    data: FlattenedObjectData;
     queries: { [hash: string]: boolean }
   }
 } = {};
@@ -66,7 +78,7 @@ var mutationCount = 0;
  * storeObject: takes a flattened object as the single argument, and places it
  * in the Store, indexed by its Id.
  */
-function storeObject(data: { [attr: string]: any }): Id {
+function storeObject(data: FlattenedObjectData): Id {
   if (!(data.id instanceof Id)) {
     throw new Error('Cannot store an object without an Id');
   }
@@ -168,7 +180,11 @@ function destroyMutationStack(target: Id) {
  * Returns the latest object state and an array of keys that changed, or null
  * in the case of a Destroy
  */
-function resolveMutation(target: Id, payloadId: number, delta: Delta): { id: Id; latest: any; fields?: Array<string> } {
+function resolveMutation(
+  target: Id,
+  payloadId: number,
+  delta: Delta
+): ObjectChangeDescriptor {
   var stack = pendingMutations[target];
   var i;
   for (i = 0; i < stack.length; i++) {
@@ -219,8 +235,7 @@ function resolveMutation(target: Id, payloadId: number, delta: Delta): { id: Id;
  * Returns the latest object state and an array of keys that changed, or null
  * in the case of a Destroy
  */
-function commitDelta(delta: Delta):
-    { id: Id; latest: any; fields?: Array<string> } {
+function commitDelta(delta: Delta): ObjectChangeDescriptor {
   var id = delta.id;
   if (delta.destroy) {
     if (store[id]) {
@@ -274,8 +289,10 @@ function commitDelta(delta: Delta):
  * Returns an array of object Ids, or an array of maps containing Ids and query-
  * specific ordering information.
  */
-function storeQueryResults(results: Array<ParseObject> | ParseObject, query: ParseQuery):
-    Array<Id | { id: Id; ordering: any }> {
+function storeQueryResults(
+  results: Array<ParseObject> | ParseObject,
+  query: ParseQuery
+): Array<Id | IdWithOrderingInfo> {
   var hash = queryHash(query);
   if (!Array.isArray(results)) {
     results = [results];
@@ -336,7 +353,7 @@ function storeQueryResults(results: Array<ParseObject> | ParseObject, query: Par
  * Given a list of object Ids, fetches the latest data for each object
  * and returns the results as an array of shallow copies.
  */
-function getDataForIds(ids: Id | Array<Id>): Array<any> {
+function getDataForIds(ids: Id | Array<Id>): Array<FlattenedObjectData> {
   if (!Array.isArray(ids)) {
     ids = [ids];
   }
@@ -356,7 +373,7 @@ function getDataForIds(ids: Id | Array<Id>): Array<any> {
 /**
  * Fetch objects from the store, converting pointers to objects where possible
  */
-function deepFetch(id: Id, seen?: Array<string>) {
+function deepFetch(id: Id, seen?: Array<string>): ?FlattenedObjectData {
   if (!store[id]) {
     return null;
   }
@@ -368,7 +385,7 @@ function deepFetch(id: Id, seen?: Array<string>) {
   var seenChildren = [];
   for (var attr in source) {
     var sourceVal = source[attr];
-    if ( sourceVal && typeof sourceVal === 'object' && sourceVal.__type === 'Pointer') {
+    if (sourceVal && typeof sourceVal === 'object' && sourceVal.__type === 'Pointer') {
       var childId = new Id(sourceVal.className, sourceVal.objectId);
       if (seen.indexOf(childId.toString()) < 0 && store[childId]) {
         seenChildren = seenChildren.concat([childId.toString()]);
@@ -383,7 +400,7 @@ function deepFetch(id: Id, seen?: Array<string>) {
 /**
  * Calculate the result of applying all Mutations to an object.
  */
-function getLatest(id: Id) {
+function getLatest(id: Id): ?FlattenedObjectData {
   if (pendingMutations[id] && pendingMutations[id].length > 0) {
     var base = {};
     var mutation;
@@ -422,26 +439,22 @@ function getLatest(id: Id) {
   return store[id] ? deepFetch(id) : null;
 }
 
-var ObjectStore: { [key: string]: any } = {
-  storeObject: storeObject,
-  removeObject: removeObject,
-  addSubscriber: addSubscriber,
-  removeSubscriber: removeSubscriber,
-  fetchSubscribers: fetchSubscribers,
-  stackMutation: stackMutation,
-  destroyMutationStack: destroyMutationStack,
-  resolveMutation: resolveMutation,
-  commitDelta: commitDelta,
-  storeQueryResults: storeQueryResults,
-  getDataForIds: getDataForIds,
-  deepFetch: deepFetch,
-  getLatest: getLatest
-};
+module.exports.storeObject = storeObject;
+module.exports.removeObject = removeObject;
+module.exports.addSubscriber = addSubscriber;
+module.exports.removeSubscriber = removeSubscriber;
+module.exports.fetchSubscribers = fetchSubscribers;
+module.exports.stackMutation = stackMutation;
+module.exports.destroyMutationStack = destroyMutationStack;
+module.exports.resolveMutation = resolveMutation;
+module.exports.commitDelta = commitDelta;
+module.exports.storeQueryResults = storeQueryResults;
+module.exports.getDataForIds = getDataForIds;
+module.exports.deepFetch = deepFetch;
+module.exports.getLatest = getLatest;
 
 if (typeof process !== 'undefined' && process.env.NODE_ENV === 'test') {
   // Expose the raw storage
-  ObjectStore._rawStore = store;
-  ObjectStore._rawMutations = pendingMutations;
+  module.exports._rawStore = store;
+  module.exports._rawMutations = pendingMutations;
 }
-
-module.exports = ObjectStore;

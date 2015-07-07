@@ -27,6 +27,8 @@ var equalObjects = require('./equalObjects');
 var Id = require('./Id');
 var Parse = require('./StubParse');
 
+import type { FlattenedObjectData } from './ObjectStore';
+
 /**
  * Query Hashes are deterministic hashes for Parse Queries.
  * Any two queries that have the same set of constraints will produce the same
@@ -145,8 +147,9 @@ function keysFromHash(hash: string):
  * queries, we can avoid building a full-blown query tool.
  */
 function matchesQuery(
-    object: { [key: string]: any },
-    query: ParseQuery | { [key: string]: any }): boolean {
+  object: FlattenedObjectData,
+  query: ParseQuery | { [key: string]: any }
+): boolean {
   if (query instanceof Parse.Query) {
     var className =
       (object.id instanceof Id) ? object.id.className : object.className;

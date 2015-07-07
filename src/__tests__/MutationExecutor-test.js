@@ -3,7 +3,7 @@
 jest.mock('../UpdateChannel');
 jest.setMock('../UpdateChannel', {
   issueMutation: function(mutation) {
-    MutationExecutor.execute(mutation.action, mutation.target, mutation.data);
+    MutationExecutor.execute(mutation);
   }
 });
 
