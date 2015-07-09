@@ -30,14 +30,16 @@ import type { ParseRequestOptions } from './MutationExecutor';
 class MutationBatch {
   static maxBatchSize: number;
 
+  _aborted: boolean;
+  _dispatched: boolean;
   _requests: Array<ParseRequestOptions>;
   _promises: Array<Parse.Promise>;
-  addRequest: (options: ParseRequestOptions) => Parse.Promise;
 
   constructor() {
+    this._aborted = false;
+    this._dispatched = false;
     this._requests = [];
     this._promises = [];
-    this.addRequest = this.addRequest.bind(this);
   }
 
   getNumberOfRequests(): number {
@@ -45,6 +47,9 @@ class MutationBatch {
   }
 
   addRequest(options: ParseRequestOptions): Parse.Promise {
+    if (this._aborted || this._dispatched) {
+      throw new Error('Cannot add a request to aborted or dispatched batch.');
+    }
     if (this.getNumberOfRequests() === MutationBatch.maxBatchSize) {
       throw new Error('Cannot batch more than ' + MutationBatch.maxBatchSize +
         ' requests at a time.');
@@ -56,6 +61,10 @@ class MutationBatch {
   }
 
   dispatch(): Parse.Promise {
+    if (this._aborted || this._dispatched) {
+      throw new Error('Cannot dispatch an already dispatched or aborted batch.');
+    }
+    this._dispatched = true;
     var requests = this._requests.map((req) => {
       var path = '/1/' + req.route;
       if (req.className) {
@@ -89,6 +98,12 @@ class MutationBatch {
       this._promises.forEach((promise) => promise.reject(error));
       return Parse.Promise.error(error);
     });
+  }
+
+  abort() {
+    this._aborted = true;
+    var error = new Error('Batch was aborted.');
+    this._promises.forEach((promise) => promise.reject(error));
   }
 }
 MutationBatch.maxBatchSize = 50;

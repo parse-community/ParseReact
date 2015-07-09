@@ -142,9 +142,13 @@ describe('MutationBatch', function() {
     expect(thirdPromiseResult).toBe(null);
     expect(thirdPromiseError).toEqual(expectedThirdError);
     expect(batchPromiseResolved).toBe(true);
+
+    // Once dispatched, the batch cannot be dispatched or aborted anymore.
+    expect(function() { batch.dispatch(); }).toThrow();
+    expect(function() { batch.abort(); }).toThrow();
   });
 
-  it('resolves promises even when request fails', function() {
+  it('rejects promises when the entire request fails', function() {
     Parse.XMLHttpRequest = testXHR(
       function() {},
       function() {},
@@ -189,6 +193,49 @@ describe('MutationBatch', function() {
     expect(firstPromiseError).toBe(secondPromiseError);
     expect(batchPromiseError).toBe(firstPromiseError);
     expect(batchPromiseSuccess).toBe(false);
+
+    // Once dispatched, the batch cannot be dispatched or aborted anymore.
+    expect(function() { batch.dispatch(); }).toThrow();
+    expect(function() { batch.abort(); }).toThrow();
+  });
+
+  it('rejects promises when the mutation is aborted', function() {
+    var batch = new MutationBatch();
+    var firstPromise = batch.addRequest({
+      method: 'DELETE',
+      route: 'classes',
+      className: 'MadeUpClassName',
+      objectId: 'randomId',
+    });
+    var secondPromise = batch.addRequest({
+      method: 'CREATE',
+      route: 'classes',
+      className: 'MadeUpClassName',
+      data: {some: 'fields', and: 'stuff'},
+    });
+
+    var firstPromiseResult = null;
+    var firstPromiseError = null;
+    var secondPromiseResult = null;
+    var secondPromiseError = null;
+    firstPromise.then(
+      function(result) { firstPromiseResult = result; },
+      function(error) { firstPromiseError = error; }
+    );
+    secondPromise.then(
+      function(result) { secondPromiseResult = result; },
+      function(error) { secondPromiseError = error; }
+    );
+    batch.abort()
+
+    expect(firstPromiseResult).toBe(null);
+    expect(secondPromiseResult).toBe(null);
+    expect(firstPromiseError instanceof Error).toBe(true);
+    expect(secondPromiseError instanceof Error).toBe(true);
+
+    // Once aborted, the batch cannot be dispatched or aborted anymore.
+    expect(function() { batch.dispatch(); }).toThrow();
+    expect(function() { batch.abort(); }).toThrow();
   });
 
 });
