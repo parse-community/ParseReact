@@ -121,7 +121,7 @@ function execute(
   var className = (typeof target === 'string') ? target : target.className;
   var objectId = (typeof target === 'string') ? '' : target.objectId;
   var payload;
-  var request = batch ? batch.addRequest : sendRequest;
+  var request = batch ? batch.addRequest.bind(batch) : sendRequest;
   switch (mutation.action) {
     case 'CREATE':
       return request({
