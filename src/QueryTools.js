@@ -193,9 +193,10 @@ function matchesKeyConstraints(object, key, constraints) {
   var compareTo;
   if (constraints.__type) {
     if (constraints.__type === 'Pointer') {
+      var objectId = object[key].objectId || object[key].id;
       return (
         constraints.className === object[key].className &&
-        constraints.objectId === object[key].objectId
+        constraints.objectId === objectId
       );
     }
     compareTo = Parse._decode(key, constraints);
