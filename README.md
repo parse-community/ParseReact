@@ -2,7 +2,7 @@
 
 Seamlessly bringing Parse data into your React applications.
 
-[![Build Status](https://travis-ci.org/ParsePlatform/ParseReact.svg?branch=master)](https://travis-ci.org/ParsePlatform/ParseReact)
+[![Build Status](https://travis-ci.org/ParsePlatform/ParseReact.svg?branch=master)](https://travis-ci.org/ParsePlatform/ParseReact) [![npm version](https://badge.fury.io/js/parse-react.svg)](http://badge.fury.io/js/parse-react)
 
 ## Overview
 
