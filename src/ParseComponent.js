@@ -38,8 +38,8 @@ ParsePatches.applyPatches();
  */
 
 export default class ParseComponent extends React.Component {
-  constructor(props) {
-    super(props);
+  constructor(...args) {
+    super(...args);
     this._subscriptions = {};
     this.data = {};
 
