@@ -1,6 +1,6 @@
 /*
  *  Parse + React
- *  v0.4.2
+ *  v0.4.3
  */
 (function(f){if(typeof exports==="object"&&typeof module!=="undefined"){module.exports=f()}else if(typeof define==="function"&&define.amd){define([],f)}else{var g;if(typeof window!=="undefined"){g=window}else if(typeof global!=="undefined"){g=global}else if(typeof self!=="undefined"){g=self}else{g=this}g.ParseReact = f()}})(function(){var define,module,exports;return (function e(t,n,r){function s(o,u){if(!n[o]){if(!t[o]){var a=typeof require=="function"&&require;if(!u&&a)return a(o,!0);if(i)return i(o,!0);var f=new Error("Cannot find module '"+o+"'");throw f.code="MODULE_NOT_FOUND",f}var l=n[o]={exports:{}};t[o][0].call(l.exports,function(e){var n=t[o][1][e];return s(n?n:e)},l,l.exports,e,t,n,r)}return n[o].exports}var i=typeof require=="function"&&require;for(var o=0;o<r.length;o++)s(r[o]);return s})({1:[function(_dereq_,module,exports){
 /*
@@ -182,8 +182,6 @@ var Delta = (function () {
       for (var attr in source.map) {
         this.map[attr] = source.map[attr];
       }
-
-      return this;
     }
   }]);
 
@@ -588,6 +586,17 @@ function validateColumn(column) {
 }
 
 function validateFields(data) {
+  // Check for multiple GeoPoints.
+  var geoPointCount = 0;
+  for (var prop in data) {
+    if (data.hasOwnProperty(prop) && data[prop] instanceof Parse.GeoPoint) {
+      ++geoPointCount;
+      if (geoPointCount > 1) {
+        throw Error('There can only be 1 GeoPoint when mutating an object.');
+      }
+    }
+  }
+
   if (data.hasOwnProperty('objectId')) {
     warning('Ignoring reserved field: objectId');
     delete data.objectId;
@@ -843,8 +852,10 @@ var MutationBatch = (function () {
   function MutationBatch() {
     _classCallCheck(this, MutationBatch);
 
+    this._aborted = false;
+    this._dispatched = false;
     this._requests = [];
-    this.addRequest = this.addRequest.bind(this);
+    this._promises = [];
   }
 
   _createClass(MutationBatch, [{
@@ -855,16 +866,26 @@ var MutationBatch = (function () {
   }, {
     key: 'addRequest',
     value: function addRequest(options) {
+      if (this._aborted || this._dispatched) {
+        throw new Error('Cannot add a request to aborted or dispatched batch.');
+      }
       if (this.getNumberOfRequests() === MutationBatch.maxBatchSize) {
         throw new Error('Cannot batch more than ' + MutationBatch.maxBatchSize + ' requests at a time.');
       }
-      var promise = options.__promise = new Parse.Promise();
+      var promise = new Parse.Promise();
       this._requests.push(options);
+      this._promises.push(promise);
       return promise;
     }
   }, {
     key: 'dispatch',
     value: function dispatch() {
+      var _this = this;
+
+      if (this._aborted || this._dispatched) {
+        throw new Error('Cannot dispatch an already dispatched or aborted batch.');
+      }
+      this._dispatched = true;
       var requests = this._requests.map(function (req) {
         var path = '/1/' + req.route;
         if (req.className) {
@@ -882,21 +903,30 @@ var MutationBatch = (function () {
         method: 'POST',
         route: 'batch',
         data: { requests: requests } };
-      var self = this;
       return Parse._request(batchRequest).then(function (response) {
-        self._requests.forEach(function (req, i) {
+        _this._requests.forEach(function (req, i) {
           var result = response[i];
+          var promise = _this._promises[i];
           if (result.success) {
-            req.__promise.resolve(result.success);
+            promise.resolve(result.success);
           } else if (result.error) {
-            req.__promise.reject(result.error);
+            promise.reject(result.error);
           }
         });
       }, function (error) {
-        self._requests.forEach(function (req, i) {
-          req.__promise.reject(error);
+        _this._promises.forEach(function (promise) {
+          return promise.reject(error);
         });
         return Parse.Promise.error(error);
+      });
+    }
+  }, {
+    key: 'abort',
+    value: function abort() {
+      this._aborted = true;
+      var error = new Error('Batch was aborted.');
+      this._promises.forEach(function (promise) {
+        return promise.reject(error);
       });
     }
   }]);
@@ -935,6 +965,9 @@ module.exports = MutationBatch;
 
 'use strict';
 
+Object.defineProperty(exports, '__esModule', {
+  value: true
+});
 var Id = _dereq_('./Id');
 var Parse = _dereq_('./StubParse');
 
@@ -1012,12 +1045,14 @@ function sendRequest(options) {
   });
 }
 
-function execute(action, target, data, batch) {
+function execute(mutation, batch) {
+  var target = mutation.target;
+  var data = mutation.data;
   var className = typeof target === 'string' ? target : target.className;
   var objectId = typeof target === 'string' ? '' : target.objectId;
   var payload;
-  var request = batch ? batch.addRequest : sendRequest;
-  switch (action) {
+  var request = batch ? batch.addRequest.bind(batch) : sendRequest;
+  switch (mutation.action) {
     case 'CREATE':
       return request({
         method: 'POST',
@@ -1129,17 +1164,13 @@ function execute(action, target, data, batch) {
         data: payload
       });
   }
-  throw new TypeError('Invalid Mutation action: ' + action);
+  throw new TypeError('Invalid Mutation action: ' + mutation.action);
 }
 
-var MutationExecutor = {
-  execute: execute };
-
+module.exports.execute = execute;
 if (typeof process !== 'undefined' && "development" === 'test') {
-  MutationExecutor.encode = encode;
+  module.exports.encode = encode;
 }
-
-module.exports = MutationExecutor;
 
 }).call(this,_dereq_('_process'))
 },{"./Id":4,"./StubParse":13,"_process":2}],10:[function(_dereq_,module,exports){
@@ -1169,6 +1200,9 @@ module.exports = MutationExecutor;
 
 'use strict';
 
+Object.defineProperty(exports, '__esModule', {
+  value: true
+});
 var flatten = _dereq_('./flatten');
 var Id = _dereq_('./Id');
 var queryHash = _dereq_('./QueryTools').queryHash;
@@ -1551,29 +1585,26 @@ function getLatest(id) {
   return store[id] ? deepFetch(id) : null;
 }
 
-var ObjectStore = {
-  storeObject: storeObject,
-  removeObject: removeObject,
-  addSubscriber: addSubscriber,
-  removeSubscriber: removeSubscriber,
-  fetchSubscribers: fetchSubscribers,
-  stackMutation: stackMutation,
-  destroyMutationStack: destroyMutationStack,
-  resolveMutation: resolveMutation,
-  commitDelta: commitDelta,
-  storeQueryResults: storeQueryResults,
-  getDataForIds: getDataForIds,
-  deepFetch: deepFetch,
-  getLatest: getLatest
-};
+module.exports.storeObject = storeObject;
+module.exports.removeObject = removeObject;
+module.exports.addSubscriber = addSubscriber;
+module.exports.removeSubscriber = removeSubscriber;
+module.exports.fetchSubscribers = fetchSubscribers;
+module.exports.stackMutation = stackMutation;
+module.exports.destroyMutationStack = destroyMutationStack;
+module.exports.resolveMutation = resolveMutation;
+module.exports.commitDelta = commitDelta;
+module.exports.storeQueryResults = storeQueryResults;
+module.exports.getDataForIds = getDataForIds;
+module.exports.deepFetch = deepFetch;
+module.exports.getLatest = getLatest;
 
 if (typeof process !== 'undefined' && "development" === 'test') {
   // Expose the raw storage
-  ObjectStore._rawStore = store;
-  ObjectStore._rawMutations = pendingMutations;
+  module.exports._rawStore = store;
+  module.exports._rawMutations = pendingMutations;
 }
-
-module.exports = ObjectStore;
+// TODO: this should really be FlattenedObjectData
 
 }).call(this,_dereq_('_process'))
 },{"./Id":4,"./QueryTools":12,"./flatten":18,"_process":2}],11:[function(_dereq_,module,exports){
@@ -2108,6 +2139,10 @@ if (typeof Parse === 'undefined') {
 
 'use strict';
 
+Object.defineProperty(exports, '__esModule', {
+  value: true
+});
+
 var _createClass = (function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ('value' in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; })();
 
 function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError('Cannot call a class as a function'); } }
@@ -2129,7 +2164,7 @@ var ObjectStore = _dereq_('./ObjectStore');
  * the array to extract each Id.
  */
 function extractId(result) {
-  return result.id;
+  return result instanceof Id ? result : result.id;
 }
 
 /**
@@ -2179,18 +2214,16 @@ var Subscription = (function () {
     key: 'addSubscriber',
 
     /**
-     * Registers a component with this subscription. When new data is available,
-     * `callback` will be called to send that data back to the component. `name`
-     * determines the prop to which that data is attached.
+     * Registers a subscriber with this subscription.
+     *
+     * `callbacks` is an observer/subscriber that will be notified when
+     * new data is available.
      */
     value: function addSubscriber(callbacks) {
       var oid = 'o' + this.observationCount++;
       this.subscribers[oid] = callbacks;
 
-      var resultSet = this.resultSet;
-      if (resultSet[0] && !(resultSet[0] instanceof Id)) {
-        resultSet = resultSet.map(extractId);
-      }
+      var resultSet = this.resultSet.map(extractId);
       var data = resultSet.length ? ObjectStore.getDataForIds(resultSet) : [];
       callbacks.onNext(this.originalQuery._observeOne ? data[0] : data);
 
@@ -2200,13 +2233,18 @@ var Subscription = (function () {
     key: 'removeSubscriber',
 
     /**
-     * Removes a component from this subscription. The callback passed into the
-     * function will be dissociated from the query, and the function will return
-     * the remaining number of subscribers.
+     * Removes a subscriber from this subscription.
      */
     value: function removeSubscriber(observationId) {
       delete this.subscribers[observationId];
       return Object.keys(this.subscribers).length;
+    }
+  }, {
+    key: '_forEachSubscriber',
+    value: function _forEachSubscriber(callable) {
+      for (var oid in this.subscribers) {
+        callable.call(this, this.subscribers[oid]);
+      }
     }
   }, {
     key: 'issueQuery',
@@ -2226,7 +2264,7 @@ var Subscription = (function () {
         _this.pushData();
       }, function (err) {
         _this.pending = false;
-        _this.pushData({ error: err });
+        _this.pushError(err);
       });
     }
   }, {
@@ -2247,12 +2285,17 @@ var Subscription = (function () {
         var index = 0;
         var orderColumns = this.originalQuery._order;
         while (index < this.resultSet.length) {
-          var compare = compareObjectOrder(orderColumns, object, this.resultSet[index].ordering);
-          if (compare > 0) {
-            index++;
-          } else {
+          // Satisfy Flow by ensuring that the current result is indeed of the
+          // IdWithOrderingInfo type, and not a plain Id.
+          var result = this.resultSet[index];
+          if (result instanceof Id) {
+            throw new Error('Encountered result without ordering info.');
+          }
+          var compare = compareObjectOrder(orderColumns, object, result.ordering);
+          if (compare <= 0) {
             break;
           }
+          index++;
         }
         var ordering = {};
         for (var i = 0; i < orderColumns.length; i++) {
@@ -2295,36 +2338,32 @@ var Subscription = (function () {
     /**
      * Fetches the full data for the latest result set, and passes it to each
      * component subscribed to this query.
-     * If override is provided, it will be directly passed to the components,
-     * rather than fetching the latest data from the ObjectStore. This is ideal
-     * if you already have calculated the result data, or wish to send an
-     * alternative payload.
      */
-    value: function pushData(override) {
-      var data = override || [];
+    value: function pushData() {
       var results = this.resultSet;
       // Fetch a subset of results if the query has a limit
       if (this.originalQuery._limit > -1) {
         results = results.slice(0, this.originalQuery._limit);
       }
-      if (results[0] && !(results[0] instanceof Id)) {
-        results = results.map(extractId);
+      var resultSet = results.map(extractId);
+      var data = ObjectStore.getDataForIds(resultSet);
+      if (this.originalQuery._observeOne) {
+        data = data[0];
       }
-      if (typeof override === 'undefined') {
-        var resultSet = results;
-        if (resultSet[0] && !(resultSet[0] instanceof Id)) {
-          resultSet = resultSet.map(extractId);
-        }
-        data = ObjectStore.getDataForIds(resultSet);
-      }
-      for (var oid in this.subscribers) {
-        var subscriber = this.subscribers[oid];
-        if (Array.isArray(data)) {
-          subscriber.onNext(this.originalQuery._observeOne ? data[0] : data);
-        } else if (data.error && subscriber.onError) {
-          subscriber.onError(data.error);
-        }
-      }
+      this._forEachSubscriber(function (subscriber) {
+        return subscriber.onNext(data);
+      });
+    }
+  }, {
+    key: 'pushError',
+
+    /**
+     * Pass the specified error to each component subscribed to this query.
+     */
+    value: function pushError(error) {
+      this._forEachSubscriber(function (subscriber) {
+        subscriber.onError && subscriber.onError(error);
+      });
     }
   }]);
 
@@ -2532,7 +2571,6 @@ Object.defineProperty(exports, '__esModule', {
   value: true
 });
 exports.issueMutation = issueMutation;
-
 var Delta = _dereq_('./Delta');
 var Id = _dereq_('./Id');
 var LocalSubscriptions = _dereq_('./LocalSubscriptions');
@@ -2557,76 +2595,62 @@ function issueMutation(mutation, options) {
   var target = mutation.target instanceof Id ? mutation.target : new Id(mutation.target, 'local-' + localCount++);
 
   if (!options.waitForServer) {
-    // Set up the optimistic mutation
-    var subscribers = [];
-    var updates;
-    var latest;
-
-    if (mutation.action === 'CREATE') {
-      executionId = ObjectStore.stackMutation(target, mutation);
-      latest = ObjectStore.getLatest(target);
-      updates = {
-        id: target,
-        latest: latest,
-        fields: Object.keys(latest)
-      };
-    } else {
-      executionId = ObjectStore.stackMutation(target, mutation);
-      subscribers = ObjectStore.fetchSubscribers(target);
-      if (mutation.action === 'DESTROY') {
-        updates = {
-          id: target,
-          latest: null,
-          fields: []
-        };
-      } else {
-        latest = ObjectStore.getLatest(target);
-        updates = {
-          id: target,
-          latest: latest,
-          fields: Object.keys(latest)
-        };
-      }
-    }
-
-    // Push the latest object to matching queries
-    pushUpdates(subscribers, updates);
+    return performOptimisticMutation(target, mutation, options.batch);
   }
 
-  var p = new Parse.Promise();
-  MutationExecutor.execute(mutation.action, mutation.target, mutation.data, options.batch).then(function (result) {
-    var changes;
+  return MutationExecutor.execute(mutation, options.batch).then(function (result) {
     var subscribers = ObjectStore.fetchSubscribers(target);
     var delta = mutation.generateDelta(result);
-    if (!options.waitForServer) {
-      // Replace the current entry with a Delta
-      changes = ObjectStore.resolveMutation(target, executionId, delta);
-      p.resolve(pushUpdates(subscribers, changes));
-    } else {
-      // Apply it to the data store
-      changes = ObjectStore.commitDelta(delta);
-      p.resolve(pushUpdates(subscribers, changes));
-    }
+    // Apply it to the data store
+    var changes = ObjectStore.commitDelta(delta);
+    return pushUpdates(subscribers, changes);
+  });
+}
+
+function performOptimisticMutation(target, mutation, batch) {
+  var executionId = ObjectStore.stackMutation(target, mutation);
+
+  var subscribers = [];
+  if (mutation.action !== 'CREATE') {
+    subscribers = ObjectStore.fetchSubscribers(target);
+  }
+  var latest = null;
+  if (mutation.action !== 'DESTROY') {
+    latest = ObjectStore.getLatest(target);
+  }
+
+  // Push the latest object to matching queries
+  var updates = {
+    id: target,
+    latest: latest,
+    fields: latest ? Object.keys(latest) : []
+  };
+  pushUpdates(subscribers, updates);
+
+  var p = new Parse.Promise();
+  MutationExecutor.execute(mutation, batch).then(function (result) {
+    var subscribers = ObjectStore.fetchSubscribers(target);
+    var delta = mutation.generateDelta(result);
+    // Replace the current entry with a Delta
+    var changes = ObjectStore.resolveMutation(target, executionId, delta);
+    p.resolve(pushUpdates(subscribers, changes));
   }, function (err) {
-    if (!options.waitForServer) {
-      // Roll back optimistic changes by deleting the entry from the queue
-      var subscribers = ObjectStore.fetchSubscribers(target);
-      if (mutation.action === 'CREATE') {
-        // Make sure the local object is removed from any result sets
-        for (var i = 0; i < subscribers.length; i++) {
-          var subscriber = SubscriptionManager.getSubscription(subscribers[i]);
-          subscriber.removeResult(target);
-        }
-        ObjectStore.destroyMutationStack(target);
-      } else {
-        var noop = new Delta(target, {});
-        var changes = ObjectStore.resolveMutation(target, executionId, noop);
-        pushUpdates(subscribers, changes);
-      }
+    // Roll back optimistic changes by deleting the entry from the queue
+    var subscribers = ObjectStore.fetchSubscribers(target);
+    if (mutation.action === 'CREATE') {
+      // Make sure the local object is removed from any result sets
+      subscribers.forEach(function (subscriber) {
+        var subscription = SubscriptionManager.getSubscription(subscriber);
+        subscription.removeResult(target);
+      });
+      ObjectStore.destroyMutationStack(target);
+    } else {
+      var noop = new Delta(target, {});
+      var changes = ObjectStore.resolveMutation(target, executionId, noop);
+      pushUpdates(subscribers, changes);
     }
     p.reject(err);
   });
-
   return p;
 }
 
@@ -2636,52 +2660,54 @@ function issueMutation(mutation, options) {
  * fetch a list of potential new subscribers using the changed fields, and add
  * the object to the result sets of any queries that now match.
  */
-function pushUpdates(subscribers, changes) {
+function pushUpdates(subscribers,
+// TODO: we really want to use the ObjectChangeDescriptor type alias from
+// ObjectStore here, but importing it will cause a bunch of additional Flow
+// checks to happen that we're not ready for yet.
+changes) {
   var i;
-  var subscriber;
   if (changes.latest === null) {
     // Pushing a Destroy action. Remove it from all current subscribers
-    for (i = 0; i < subscribers.length; i++) {
-      subscriber = SubscriptionManager.getSubscription(subscribers[i]);
-      if (!subscriber) {
+    subscribers.forEach(function (subscriber) {
+      var subscription = SubscriptionManager.getSubscription(subscriber);
+      if (!subscription) {
         throw new Error('Object is attached to a nonexistent subscription');
       }
-      subscriber.removeResult(changes.id);
-    }
+      subscription.removeResult(changes.id);
+    });
     return null;
   }
   // For all current subscribers, check if the object still matches the query.
   // Then, using the changed keys, find any queries we might now match.
   var visited = {};
-  for (i = 0; i < subscribers.length; i++) {
-    visited[subscribers[i]] = true;
-    subscriber = SubscriptionManager.getSubscription(subscribers[i]);
-    if (QueryTools.matchesQuery(changes.latest, subscriber.originalQuery)) {
+  subscribers.forEach(function (subscriber) {
+    visited[subscriber] = true;
+    var subscription = SubscriptionManager.getSubscription(subscriber);
+    if (QueryTools.matchesQuery(changes.latest, subscription.originalQuery)) {
       if (changes.id.toString() !== changes.latest.id.toString()) {
         // It's a Create method
-        subscriber.removeResult(changes.id, true);
-        ObjectStore.removeSubscriber(changes.id, subscribers[i]);
-        subscriber.addResult(changes.latest);
-        ObjectStore.addSubscriber(changes.latest.id, subscribers[i]);
+        subscription.removeResult(changes.id, true);
+        ObjectStore.removeSubscriber(changes.id, subscriber);
+        subscription.addResult(changes.latest);
+        ObjectStore.addSubscriber(changes.latest.id, subscriber);
       } else {
-        subscriber.pushData();
+        subscription.pushData();
       }
     } else {
-      subscriber.removeResult(changes.id);
-      ObjectStore.removeSubscriber(changes.id, subscribers[i]);
+      subscription.removeResult(changes.id);
+      ObjectStore.removeSubscriber(changes.id, subscriber);
     }
-  }
-  var potentials = SubscriptionManager.queriesForFields(changes.latest.id.className, changes.fields);
-  for (i = 0; i < potentials.length; i++) {
-    if (visited[potentials[i]]) {
-      continue;
+  });
+  SubscriptionManager.queriesForFields(changes.latest.id.className, changes.fields).forEach(function (potential) {
+    if (visited[potential]) {
+      return;
     }
-    subscriber = SubscriptionManager.getSubscription(potentials[i]);
-    if (QueryTools.matchesQuery(changes.latest, subscriber.originalQuery)) {
-      subscriber.addResult(changes.latest);
-      ObjectStore.addSubscriber(changes.latest.id, potentials[i]);
+    var subscription = SubscriptionManager.getSubscription(potential);
+    if (QueryTools.matchesQuery(changes.latest, subscription.originalQuery)) {
+      subscription.addResult(changes.latest);
+      ObjectStore.addSubscriber(changes.latest.id, potential);
     }
-  }
+  });
   if (changes.latest.id.className === '_User') {
     var currentUser = Parse.User.current();
     if (currentUser && changes.latest.id.objectId === currentUser.id) {
@@ -2690,10 +2716,6 @@ function pushUpdates(subscribers, changes) {
   }
   return changes.latest;
 }
-
-module.exports = {
-  issueMutation: issueMutation
-};
 
 },{"./Delta":3,"./Id":4,"./LocalSubscriptions":5,"./MutationExecutor":9,"./ObjectStore":10,"./QueryTools":12,"./StubParse":13,"./SubscriptionManager":15}],17:[function(_dereq_,module,exports){
 /*
