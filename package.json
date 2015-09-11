@@ -43,7 +43,8 @@
     "vinyl-source-stream": "~1.0.0"
   },
   "scripts": {
-    "test": "NODE_ENV=test jest"
+    "test": "NODE_ENV=test jest",
+    "prepublish": "gulp"
   },
   "jest": {
     "rootDir": "src",
