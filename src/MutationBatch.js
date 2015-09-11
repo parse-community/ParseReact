@@ -66,25 +66,18 @@ class MutationBatch {
     }
     this._dispatched = true;
     var requests = this._requests.map((req) => {
-      var path = '/1/' + req.route;
-      if (req.className) {
-        path += '/' + req.className;
+      var copy = { method: req.method, path: '/1/' + req.path };
+      if (req.data) {
+        copy.body = req.data;
       }
-      if (req.objectId) {
-        path += '/' + req.objectId
-      }
-      return {
-        method: req.method,
-        path: path,
-        body: req.data,
-      };
+      return copy;
     });
-    var batchRequest = {
-      method: 'POST',
-      route: 'batch',
-      data: {requests},
-    };
-    return Parse._request(batchRequest).then((response) => {
+    return Parse._request(
+      'POST',
+      'batch',
+      { requests },
+      {}
+    ).then((response) => {
       this._requests.forEach((req, i) => {
         var result = response[i];
         var promise = this._promises[i];

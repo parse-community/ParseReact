@@ -18,12 +18,7 @@ var Id = require('../Id');
 var Mutation = require('../Mutation');
 var MutationExecutor = require('../MutationExecutor');
 
-var Parse = require('parse').Parse;
-Parse.initialize('testid', 'testkey');
-Parse._getInstallationId = function() {
-  return Parse.Promise.as('installationid');
-};
-Parse.VERSION = 'js';
+var Parse = require('parse');
 
 var testXHR = function(urlTest, bodyTest, response) {
   var XHR = function() { };
@@ -51,19 +46,15 @@ describe('MutationExecutor', function() {
 
   it('can issue a Create command', function() {
     var called = false;
-    Parse.XMLHttpRequest = testXHR(function(method, url) {
+    Parse.CoreManager.getRESTController().request = function(method, path, body) {
       expect(method).toBe('POST');
-      expect(url).toBe('https://api.parse.com/1/classes/Klass');
-    }, function(body) {
-      called = true;
-      expect(JSON.parse(body)).toEqual({
-        _ApplicationId: 'testid',
-        _JavaScriptKey: 'testkey',
-        _InstallationId: 'installationid',
-        _ClientVersion: 'js',
+      expect(path).toBe('classes/Klass');
+      expect(body).toEqual({
         value: 12
       });
-    });
+      called = true;
+      return Parse.Promise.as({});
+    };
 
     Mutation.Create('Klass', { value: 12 }).dispatch();
     expect(called).toBe(true);
@@ -71,19 +62,12 @@ describe('MutationExecutor', function() {
 
   it('can issue a Destroy command', function() {
     var called = false;
-    Parse.XMLHttpRequest = testXHR(function(method, url) {
-      expect(method).toBe('POST');
-      expect(url).toBe('https://api.parse.com/1/classes/Klass/O1');
-    }, function(body) {
+    Parse.CoreManager.getRESTController().request = function(method, path) {
+      expect(method).toBe('DELETE');
+      expect(path).toBe('classes/Klass/O1');
       called = true;
-      expect(JSON.parse(body)).toEqual({
-        _ApplicationId: 'testid',
-        _JavaScriptKey: 'testkey',
-        _InstallationId: 'installationid',
-        _ClientVersion: 'js',
-        _method: 'DELETE'
-      });
-    });
+      return Parse.Promise.as({});
+    };
 
     Mutation.Destroy(new Id('Klass', 'O1')).dispatch();
     expect(called).toBe(true);
@@ -91,20 +75,15 @@ describe('MutationExecutor', function() {
 
   it('can issue a Set request', function() {
     var called = false;
-    Parse.XMLHttpRequest = testXHR(function(method, url) {
-      expect(method).toBe('POST');
-      expect(url).toBe('https://api.parse.com/1/classes/Klass/O1');
-    }, function(body) {
-      called = true;
-      expect(JSON.parse(body)).toEqual({
-        _ApplicationId: 'testid',
-        _JavaScriptKey: 'testkey',
-        _InstallationId: 'installationid',
-        _ClientVersion: 'js',
-        _method: 'PUT',
+    Parse.CoreManager.getRESTController().request = function(method, path, body) {
+      expect(method).toBe('PUT');
+      expect(path).toBe('classes/Klass/O1');
+      expect(body).toEqual({
         value: 12
       });
-    });
+      called = true;
+      return Parse.Promise.as({});
+    };
 
     Mutation.Set(new Id('Klass', 'O1'), { value: 12 }).dispatch();
     expect(called).toBe(true);
@@ -112,20 +91,15 @@ describe('MutationExecutor', function() {
 
   it('can issue a Unset request', function() {
     var called = false;
-    Parse.XMLHttpRequest = testXHR(function(method, url) {
-      expect(method).toBe('POST');
-      expect(url).toBe('https://api.parse.com/1/classes/Klass/O1');
-    }, function(body) {
-      called = true;
-      expect(JSON.parse(body)).toEqual({
-        _ApplicationId: 'testid',
-        _JavaScriptKey: 'testkey',
-        _InstallationId: 'installationid',
-        _ClientVersion: 'js',
-        _method: 'PUT',
+    Parse.CoreManager.getRESTController().request = function(method, path, body) {
+      expect(method).toBe('PUT');
+      expect(path).toBe('classes/Klass/O1');
+      expect(body).toEqual({
         no_more: { __op: 'Delete' }
       });
-    });
+      called = true;
+      return Parse.Promise.as({});
+    };
 
     Mutation.Unset(new Id('Klass', 'O1'), 'no_more').dispatch();
     expect(called).toBe(true);
@@ -133,20 +107,17 @@ describe('MutationExecutor', function() {
 
   it('can issue an Increment request', function() {
     var called = false;
-    Parse.XMLHttpRequest = testXHR(function(method, url) {
-      expect(method).toBe('POST');
-      expect(url).toBe('https://api.parse.com/1/classes/Klass/O1');
-    }, function(body) {
-      called = true;
-      expect(JSON.parse(body)).toEqual({
-        _ApplicationId: 'testid',
-        _JavaScriptKey: 'testkey',
-        _InstallationId: 'installationid',
-        _ClientVersion: 'js',
-        _method: 'PUT',
+    Parse.CoreManager.getRESTController().request = function(method, path, body) {
+      expect(method).toBe('PUT');
+      expect(path).toBe('classes/Klass/O1');
+      expect(body).toEqual({
         numeric: { __op: 'Increment', amount: 1 }
       });
-    });
+      called = true;
+      return Parse.Promise.as({
+        numeric: 1
+      });
+    };
 
     Mutation.Increment(new Id('Klass', 'O1'), 'numeric').dispatch();
     expect(called).toBe(true);
@@ -154,20 +125,17 @@ describe('MutationExecutor', function() {
 
   it('can issue an array Add request', function() {
     var called = false;
-    Parse.XMLHttpRequest = testXHR(function(method, url) {
-      expect(method).toBe('POST');
-      expect(url).toBe('https://api.parse.com/1/classes/Klass/O1');
-    }, function(body) {
-      called = true;
-      expect(JSON.parse(body)).toEqual({
-        _ApplicationId: 'testid',
-        _JavaScriptKey: 'testkey',
-        _InstallationId: 'installationid',
-        _ClientVersion: 'js',
-        _method: 'PUT',
+    Parse.CoreManager.getRESTController().request = function(method, path, body) {
+      expect(method).toBe('PUT');
+      expect(path).toBe('classes/Klass/O1');
+      expect(body).toEqual({
         tags: { __op: 'Add', objects: ['new'] }
       });
-    });
+      called = true;
+      return Parse.Promise.as({
+        tags: ['new']
+      });
+    };
 
     Mutation.Add(new Id('Klass', 'O1'), 'tags', 'new').dispatch();
     expect(called).toBe(true);
@@ -175,20 +143,17 @@ describe('MutationExecutor', function() {
 
   it('can issue an array AddUnique request', function() {
     var called = false;
-    Parse.XMLHttpRequest = testXHR(function(method, url) {
-      expect(method).toBe('POST');
-      expect(url).toBe('https://api.parse.com/1/classes/Klass/O1');
-    }, function(body) {
-      called = true;
-      expect(JSON.parse(body)).toEqual({
-        _ApplicationId: 'testid',
-        _JavaScriptKey: 'testkey',
-        _InstallationId: 'installationid',
-        _ClientVersion: 'js',
-        _method: 'PUT',
+    Parse.CoreManager.getRESTController().request = function(method, path, body) {
+      expect(method).toBe('PUT');
+      expect(path).toBe('classes/Klass/O1');
+      expect(body).toEqual({
         tags: { __op: 'AddUnique', objects: ['new'] }
       });
-    });
+      called = true;
+      return Parse.Promise.as({
+        tags: ['new']
+      });
+    };
 
     Mutation.AddUnique(new Id('Klass', 'O1'), 'tags', 'new').dispatch();
     expect(called).toBe(true);
@@ -196,20 +161,17 @@ describe('MutationExecutor', function() {
 
   it('can issue an array Remove request', function() {
     var called = false;
-    Parse.XMLHttpRequest = testXHR(function(method, url) {
-      expect(method).toBe('POST');
-      expect(url).toBe('https://api.parse.com/1/classes/Klass/O1');
-    }, function(body) {
-      called = true;
-      expect(JSON.parse(body)).toEqual({
-        _ApplicationId: 'testid',
-        _JavaScriptKey: 'testkey',
-        _InstallationId: 'installationid',
-        _ClientVersion: 'js',
-        _method: 'PUT',
+    Parse.CoreManager.getRESTController().request = function(method, path, body) {
+      expect(method).toBe('PUT');
+      expect(path).toBe('classes/Klass/O1');
+      expect(body).toEqual({
         tags: { __op: 'Remove', objects: ['new'] }
       });
-    });
+      called = true;
+      return Parse.Promise.as({
+        tags: []
+      });
+    };
 
     Mutation.Remove(new Id('Klass', 'O1'), 'tags', 'new').dispatch();
     expect(called).toBe(true);

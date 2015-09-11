@@ -14,7 +14,7 @@ var Mutation = require('../Mutation');
 var ObjectStore = require('../ObjectStore');
 var queryHash = require('../QueryTools').queryHash;
 
-var Parse = require('parse').Parse;
+var Parse = require('parse');
 
 describe('Object storage', function() {
   afterEach(function() {
@@ -388,7 +388,7 @@ describe('Object storage', function() {
       childA: child,
       childB: child
     });
-    query = new Parse.Query(Item).include('childA,childB');
+    var query = new Parse.Query(Item).include('childA,childB');
     ObjectStore.storeQueryResults([parent, child], query);
     expect(ObjectStore.deepFetch(new Id('Item', 'I1'), [])).toEqual({
       id: new Id('Item', 'I1'),

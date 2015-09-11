@@ -7,7 +7,7 @@ jest.dontMock('../Id');
 jest.dontMock('../QueryTools');
 jest.dontMock('../StubParse');
 
-var Parse = require('parse').Parse;
+var Parse = require('parse');
 
 var Id = require('../Id');
 var QueryTools = require('../QueryTools');

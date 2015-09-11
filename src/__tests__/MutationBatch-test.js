@@ -5,29 +5,9 @@ jest.dontMock('../MutationBatch');
 jest.dontMock('../StubParse');
 
 var MutationBatch = require('../MutationBatch');
-var Parse = require('parse').Parse;
-Parse.initialize('testid', 'testkey');
-
-var testXHR = function(urlTest, bodyTest, status, response) {
-  var XHR = function() { };
-  XHR.prototype = {
-    open: function(method, url) {
-      urlTest(method, url);
-    },
-    setRequestHeader: function() { },
-    send: function(body) {
-      bodyTest(body);
-      this.status = status;
-      this.responseText = JSON.stringify(response || {});
-      this.readyState = 4;
-      this.onreadystatechange();
-    }
-  };
-  return XHR;
-};
+var Parse = require('parse');
 
 describe('MutationBatch', function() {
-
   it('reports number of requests being batched', function() {
     var batch = new MutationBatch();
     expect(batch.getNumberOfRequests()).toBe(0);
@@ -64,21 +44,16 @@ describe('MutationBatch', function() {
     var batch = new MutationBatch();
     var firstPromise = batch.addRequest({
       method: 'DELETE',
-      route: 'classes',
-      className: 'MadeUpClassName',
-      objectId: 'randomId',
+      path: 'classes/MadeUpClassName/randomId',
     });
     var secondPromise = batch.addRequest({
       method: 'CREATE',
-      route: 'classes',
-      className: 'MadeUpClassName',
+      path: 'classes/MadeUpClassName',
       data: {some: 'fields', and: 'stuff'},
     });
     var thirdPromise = batch.addRequest({
       method: 'SET',
-      route: 'classes',
-      className: 'MadeUpClassName',
-      objectId: 'non_existent',
+      path: 'classes/MadeUpClassName/non_existent',
       data: {cant: 'touch', this_: 'duuh duhduhduh dummm duh duh'},
     });
 
@@ -101,18 +76,15 @@ describe('MutationBatch', function() {
       function(result) { thirdPromiseResult = result; },
       function(error) { thirdPromiseError = error; }
     );
-
-    Parse.XMLHttpRequest = testXHR(function(method, url) {
+    Parse.CoreManager.getRESTController().request = function(method, path, data) {
       expect(method).toBe('POST');
-      expect(url).toBe('https://api.parse.com/1/batch');
-    }, function(body) {
-      var requests = JSON.parse(body).requests;
-      expect(requests).toEqual({
-        0: {
+      expect(path).toBe('batch');
+      expect(data.requests).toEqual([
+        {
           method: 'DELETE',
-          path: '/1/classes/MadeUpClassName/randomId',
+          path: '/1/classes/MadeUpClassName/randomId'
         },
-        1: {
+        {
           method: 'CREATE',
           path: '/1/classes/MadeUpClassName',
           body: {
@@ -120,20 +92,26 @@ describe('MutationBatch', function() {
             and: 'stuff',
           },
         },
-        2: {
+        {
           method: 'SET',
           path: '/1/classes/MadeUpClassName/non_existent',
           body: {
             cant: 'touch',
             this_: 'duuh duhduhduh dummm duh duh',
           },
-        },
-      });
-    }, 200, [
-      {success: expectedFirstResult},
-      {success: expectedSecondResult},
-      {error: expectedThirdError},
-    ]);
+        }
+      ]);
+      return Parse.Promise.as(
+        [{
+          success: expectedFirstResult
+        }, {
+          success: expectedSecondResult
+        }, {
+          error: expectedThirdError
+        }]
+      );
+    };
+
     var batchPromiseResolved = false;
     batch.dispatch().then(function() { batchPromiseResolved = true; });
 
@@ -149,23 +127,20 @@ describe('MutationBatch', function() {
   });
 
   it('rejects promises when the entire request fails', function() {
-    Parse.XMLHttpRequest = testXHR(
-      function() {},
-      function() {},
-      418
-    );
+    Parse.CoreManager.getRESTController().request = function() {
+      return Parse.Promise.error(
+        new Parse.Error(418, 'Error')
+      );
+    };
 
     var batch = new MutationBatch();
     var firstPromise = batch.addRequest({
       method: 'DELETE',
-      route: 'classes',
-      className: 'MadeUpClassName',
-      objectId: 'randomId',
+      path: 'classes/MadeUpClassName/randomId',
     });
     var secondPromise = batch.addRequest({
       method: 'CREATE',
-      route: 'classes',
-      className: 'MadeUpClassName',
+      path: 'classes/MadeUpClassName',
       data: {some: 'fields', and: 'stuff'},
     });
 
@@ -203,14 +178,11 @@ describe('MutationBatch', function() {
     var batch = new MutationBatch();
     var firstPromise = batch.addRequest({
       method: 'DELETE',
-      route: 'classes',
-      className: 'MadeUpClassName',
-      objectId: 'randomId',
+      path: 'classes/MadeUpClassName/randomId',
     });
     var secondPromise = batch.addRequest({
       method: 'CREATE',
-      route: 'classes',
-      className: 'MadeUpClassName',
+      path: 'classes/MadeUpClassName',
       data: {some: 'fields', and: 'stuff'},
     });
 
