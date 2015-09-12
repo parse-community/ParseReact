@@ -51,18 +51,20 @@ var currentUser = {
         ObjectStore.storeObject(flatten(Parse.User.current()));
       }
       callbacks.onNext(ObjectStore.getLatest(id));
-    } else if (Parse.Storage.async) {
+    } else if (Parse.Storage.async()) {
       // It's possible we haven't loaded the user from disk yet
-      Parse.User._currentAsync().then((user) => {
+      Parse.User.currentAsync().then((user) => {
         if (user !== null) {
           id = new Id('_User', user.id);
           if (!ObjectStore.getLatest(id)) {
             ObjectStore.storeObject(flatten(user));
           }
           callbacks.onNext(ObjectStore.getLatest(id));
+        } else {
+          callbacks.onNext(null);
         }
       });
-      callbacks.onNext(null);
+      callbacks.onNext(undefined);
     }
     return {
       dispose: () => {
@@ -84,7 +86,7 @@ var currentUser = {
           current.set(attr, changes[attr]);
         }
       }
-      Parse.User._saveCurrentUser(current);
+      Parse.CoreManager.getUserController().setCurrentUser(current);
     }
     for (var oid in this.subscribers) {
       var latest = null;

@@ -1,1 +1,1 @@
-module.exports = require('./lib/ParseReact.js');
+module.exports = require('./lib/browser/ParseReact.js');

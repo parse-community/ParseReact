@@ -66,7 +66,7 @@ function encode(data: any, seen?: Array<any>): any {
       objectId: id
     };
   }
-  if (data instanceof Parse.GeoPoint) {
+  if (data instanceof Parse.GeoPoint || data instanceof Parse.ACL) {
     return data.toJSON();
   }
   if (data instanceof Parse.File) {
