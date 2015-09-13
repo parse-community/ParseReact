@@ -1,6 +1,6 @@
 {
   "name": "parse-react",
-  "version": "0.4.2",
+  "version": "0.5.0",
   "description": "Use Parse data in React applications",
   "homepage": "https://github.com/ParsePlatform/ParseReact",
   "keywords": [
@@ -17,7 +17,7 @@
   "bugs": "https://github.com/ParsePlatform/ParseReact/issues",
   "files": [
     "index.js",
-    "class.js",
+    "react-native.js",
     "lib/",
     "LICENSE",
     "README.md"
@@ -26,19 +26,19 @@
     "react-native": false
   },
   "devDependencies": {
-    "babel-jest": "~5.0.0",
-    "babelify": "^6.0.2",
+    "babel-jest": "~5.3.0",
+    "babelify": "~6.3.0",
     "browserify": "~9.0.3",
     "bundle-collapser": "~1.1.4",
     "envify": "~3.2.0",
     "gulp": "~3.8.11",
-    "gulp-babel": "^5.1.0",
+    "gulp-babel": "~5.2.0",
     "gulp-derequire": "~2.0.0",
     "gulp-insert": "~0.4.0",
     "gulp-replace": "^0.5.3",
     "gulp-uglify": "~1.1.0",
-    "jest-cli": "~0.4.0",
-    "parse": "^1.4.0",
+    "jest-cli": "~0.5.0",
+    "parse": "~1.6.0",
     "vinyl-buffer": "~1.0.0",
     "vinyl-source-stream": "~1.0.0"
   },

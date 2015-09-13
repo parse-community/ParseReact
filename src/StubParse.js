@@ -25,7 +25,7 @@
 if (typeof Parse === 'undefined') {
   if (typeof require === 'function') {
     try {
-      module.exports = require('parse').Parse;
+      module.exports = require('parse');
     } catch (e) {
       throw new Error('Failed to require Parse module. You need the Parse SDK' +
         ' installed to use Parse + React');

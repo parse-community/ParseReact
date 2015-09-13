@@ -32,6 +32,8 @@ jest.dontMock('../SubscriptionManager');
 var UpdateChannel = require('../UpdateChannel');
 var Mutation = require('../Mutation');
 
+var Parse = require('parse');
+
 describe('issueMutation (pessimistic)', function() {
   beforeEach(function() {
     MockMutationExecutor.reset();

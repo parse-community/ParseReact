@@ -22,14 +22,9 @@
 
 'use strict';
 
-var React = require('./StubReact');
 var Parse = require('./StubParse');
 var ParsePatches = require('./ParsePatches');
 var warning = require('./warning');
-
-// It's possible that this is the only entry point used for ParseReact, so we
-// need to ensure the SDK is patched here as well.
-ParsePatches.applyPatches();
 
 /**
  * Provide observability and query-specific functionality on a subclass of
@@ -37,135 +32,137 @@ ParsePatches.applyPatches();
  * is officially released within React.
  */
 
-export default class ParseComponent extends React.Component {
-  constructor(...args) {
-    super(...args);
-    this._subscriptions = {};
-    this.data = {};
+export default function(React) {
+  return class ParseComponent extends React.Component {
+    constructor(...args) {
+      super(...args);
+      this._subscriptions = {};
+      this.data = {};
 
-    this._pendingQueries = {};
-    this._queryErrors = {};
+      this._pendingQueries = {};
+      this._queryErrors = {};
 
-    if (!this.observe) {
-      throw new Error('Components extending ParseComponent must declare an ' +
-        'observe() method.');
-    }
-  }
-
-  componentWillMount() {
-    this._subscribe(this.props, this.state);
-  }
-
-  componentWillUnmount() {
-    this._unsubscribe();
-  }
-
-  componentWillUpdate(nextProps, nextState) {
-    // Only subscribe if props or state changed
-    if (nextProps !== this.props || nextState !== this.state) {
-      this._subscribe(nextProps, nextState);
-    }
-  }
-
-  /**
-   * Query-specific public methods
-   */
-
-  pendingQueries() {
-    var pending = [];
-    for (var q in this._subscriptions) {
-      if (this._subscriptions[q].pending &&
-          this._subscriptions[q].pending()) {
-        pending.push(q);
+      if (!this.observe) {
+        throw new Error('Components extending ParseComponent must declare an ' +
+          'observe() method.');
       }
     }
-    return pending;
-  }
 
-  queryErrors() {
-    if (Object.keys(this._queryErrors).length < 1) {
-      return null;
+    componentWillMount() {
+      this._subscribe(this.props, this.state);
     }
-    var errors = {};
-    for (var e in this._queryErrors) {
-      errors[e] = this._queryErrors[e];
-    }
-    return errors;
-  }
 
-  refreshQueries(queries) {
-    var queryNames = {};
-    var name;
-    if (typeof queries === 'undefined') {
-      for (name in this._subscriptions) {
-        queryNames[name] = this._subscriptions[name];
+    componentWillUnmount() {
+      this._unsubscribe();
+    }
+
+    componentWillUpdate(nextProps, nextState) {
+      // Only subscribe if props or state changed
+      if (nextProps !== this.props || nextState !== this.state) {
+        this._subscribe(nextProps, nextState);
       }
-    } else if (typeof queries === 'string') {
-      if (this._subscriptions[queries]) {
-        queryNames[queries] = this._subscriptions[queries];
-      } else {
-        warning('Cannot refresh unknown query name: ' + queries);
-      }
-    } else if (Array.isArray(queries)) {
-      for (var i = 0; i < queries.length; i++) {
-        if (this._subscriptions[queries[i]]) {
-          queryNames[queries[i]] = this._subscriptions[queries[i]];
-        } else {
-          warning('Cannot refresh unknown query name: ' + queries[i]);
+    }
+
+    /**
+     * Query-specific public methods
+     */
+
+    pendingQueries() {
+      var pending = [];
+      for (var q in this._subscriptions) {
+        if (this._subscriptions[q].pending &&
+            this._subscriptions[q].pending()) {
+          pending.push(q);
         }
       }
-    } else {
-      throw new TypeError('refreshQueries must receive a query name or an ' +
-        'array of query names');
+      return pending;
     }
 
-    for (name in queryNames) {
-      this._pendingQueries[name] = true;
-      queryNames[name].refresh();
-    }
-    this.forceUpdate();
-  }
-
-  /**
-   * Private subscription methods
-   */
-
-  _subscribe(props, state) {
-    var observed = this.observe(props, state);
-    var newSubscriptions = {};
-    for (var name in observed) {
-      if (!observed[name].subscribe) {
-        warning('The observation value "' + name + '" is not subscribable. ' +
-        'Make sure you are returning the Query, and not fetching it yourself.');
-        continue;
+    queryErrors() {
+      if (Object.keys(this._queryErrors).length < 1) {
+        return null;
       }
-      newSubscriptions[name] = observed[name].subscribe({
-        onNext: this._receiveData.bind(this, name),
-        onError: (observed[name] instanceof Parse.Query) ?
-          this._receiveError.bind(this, name) : function() { }
-      });
-      this._pendingQueries[name] = true;
+      var errors = {};
+      for (var e in this._queryErrors) {
+        errors[e] = this._queryErrors[e];
+      }
+      return errors;
     }
-    this._unsubscribe();
-    this._subscriptions = newSubscriptions;
-  }
 
-  _unsubscribe() {
-    for (var name in this._subscriptions) {
-      this._subscriptions[name].dispose();
+    refreshQueries(queries) {
+      var queryNames = {};
+      var name;
+      if (typeof queries === 'undefined') {
+        for (name in this._subscriptions) {
+          queryNames[name] = this._subscriptions[name];
+        }
+      } else if (typeof queries === 'string') {
+        if (this._subscriptions[queries]) {
+          queryNames[queries] = this._subscriptions[queries];
+        } else {
+          warning('Cannot refresh unknown query name: ' + queries);
+        }
+      } else if (Array.isArray(queries)) {
+        for (var i = 0; i < queries.length; i++) {
+          if (this._subscriptions[queries[i]]) {
+            queryNames[queries[i]] = this._subscriptions[queries[i]];
+          } else {
+            warning('Cannot refresh unknown query name: ' + queries[i]);
+          }
+        }
+      } else {
+        throw new TypeError('refreshQueries must receive a query name or an ' +
+          'array of query names');
+      }
+
+      for (name in queryNames) {
+        this._pendingQueries[name] = true;
+        queryNames[name].refresh();
+      }
+      this.forceUpdate();
     }
-    this._subscriptions = {};
-  }
 
-  _receiveData(name, value) {
-    this.data[name] = value;
-    delete this._pendingQueries[name];
-    delete this._queryErrors[name];
-    this.forceUpdate();
-  }
+    /**
+     * Private subscription methods
+     */
 
-  _receiveError(name, error) {
-    this._queryErrors[name] = error;
-    this.forceUpdate();
+    _subscribe(props, state) {
+      var observed = this.observe(props, state);
+      var newSubscriptions = {};
+      for (var name in observed) {
+        if (!observed[name].subscribe) {
+          warning('The observation value "' + name + '" is not subscribable. ' +
+          'Make sure you are returning the Query, and not fetching it yourself.');
+          continue;
+        }
+        newSubscriptions[name] = observed[name].subscribe({
+          onNext: this._receiveData.bind(this, name),
+          onError: (observed[name] instanceof Parse.Query) ?
+            this._receiveError.bind(this, name) : function() { }
+        });
+        this._pendingQueries[name] = true;
+      }
+      this._unsubscribe();
+      this._subscriptions = newSubscriptions;
+    }
+
+    _unsubscribe() {
+      for (var name in this._subscriptions) {
+        this._subscriptions[name].dispose();
+      }
+      this._subscriptions = {};
+    }
+
+    _receiveData(name, value) {
+      this.data[name] = value;
+      delete this._pendingQueries[name];
+      delete this._queryErrors[name];
+      this.forceUpdate();
+    }
+
+    _receiveError(name, error) {
+      this._queryErrors[name] = error;
+      this.forceUpdate();
+    }
   }
-}
+};

@@ -30,8 +30,7 @@ describe('flatten', function() {
     var item = new Item();
     item.id = 'O2';
     var creation = new Date();
-    item.createdAt = creation;
-    item.updatedAt = creation;
+    item._finishFetch({ createdAt: creation });
     expect(flatten(item)).toEqual({
       id: new Id('Item', 'O2'),
       className: 'Item',

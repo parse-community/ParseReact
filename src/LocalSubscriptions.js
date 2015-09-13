@@ -45,24 +45,34 @@ var currentUser = {
     this.subscribers[observerId] = callbacks;
     var id;
 
-    if (Parse.User.current()) {
+    var current = null;
+    try {
+      // Attempt to get the user synchronously, if it's in cache
+      current = Parse.User.current();
+    } catch(e) {
+      // Using an asynchronous storage with no cache
+      // Fail over to the currentAsync() fetch
+    }
+    if (current) {
       id = new Id('_User', Parse.User.current().id);
       if (!ObjectStore.getLatest(id)) {
         ObjectStore.storeObject(flatten(Parse.User.current()));
       }
       callbacks.onNext(ObjectStore.getLatest(id));
-    } else if (Parse.Storage.async) {
+    } else if (Parse.Storage.async()) {
       // It's possible we haven't loaded the user from disk yet
-      Parse.User._currentAsync().then((user) => {
+      Parse.User.currentAsync().then((user) => {
         if (user !== null) {
           id = new Id('_User', user.id);
           if (!ObjectStore.getLatest(id)) {
             ObjectStore.storeObject(flatten(user));
           }
           callbacks.onNext(ObjectStore.getLatest(id));
+        } else {
+          callbacks.onNext(null);
         }
       });
-      callbacks.onNext(null);
+      callbacks.onNext(undefined);
     }
     return {
       dispose: () => {
@@ -72,31 +82,32 @@ var currentUser = {
   },
 
   update: function(changes: { [key: string]: any }) {
-    var current = Parse.User.current();
-    if (current !== null) {
-      for (var attr in changes) {
-        if (attr !== 'id' &&
-            attr !== 'objectId' &&
-            attr !== 'className' &&
-            attr !== 'sessionToken' &&
-            attr !== 'createdAt' &&
-            attr !== 'updatedAt') {
-          current.set(attr, changes[attr]);
+    Parse.User.currentAsync().then((current) => {
+      if (current !== null) {
+        for (var attr in changes) {
+          if (attr !== 'id' &&
+              attr !== 'objectId' &&
+              attr !== 'className' &&
+              attr !== 'sessionToken' &&
+              attr !== 'createdAt' &&
+              attr !== 'updatedAt') {
+            current.set(attr, changes[attr]);
+          }
         }
+        Parse.CoreManager.getUserController().setCurrentUser(current);
       }
-      Parse.User._saveCurrentUser(current);
-    }
-    for (var oid in this.subscribers) {
-      var latest = null;
-      if (current) {
-        latest = ObjectStore.getLatest(new Id('_User', current.id));
-        if (latest === null) {
-          latest = flatten(current);
-          ObjectStore.storeObject(latest);
+      for (var oid in this.subscribers) {
+        var latest = null;
+        if (current) {
+          latest = ObjectStore.getLatest(new Id('_User', current.id));
+          if (latest === null) {
+            latest = flatten(current);
+            ObjectStore.storeObject(latest);
+          }
         }
+        this.subscribers[oid].onNext(latest);
       }
-      this.subscribers[oid].onNext(latest);
-    }
+    });
   }
 };
 

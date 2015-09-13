@@ -104,10 +104,21 @@ in your dependencies.
 
 ```js
 var React = require('react');
-var Parse = require('parse').Parse;
+var Parse = require('parse');
 var ParseReact = require('parse-react');
 
 // ...
+```
+
+As of version 1.6, the Parse JS SDK has a different build for React Native.
+If you're using Parse+React on React Native, you'll need to require the
+`'parse-react/react-native'` package instead.
+
+```js
+// For React Native apps
+var React = require('react-native');
+var Parse = require('parse/react-native');
+var ParseReact = require('parse-react/react-native');
 ```
 
 Now that you've included all of the necessary libraries, you're ready to start

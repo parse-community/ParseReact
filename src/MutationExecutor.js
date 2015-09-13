@@ -28,10 +28,8 @@ var Parse = require('./StubParse');
 
 export type ParseRequestOptions = {
   method: string;
-  route: string;
-  className: string;
+  path: string;
   data?: any;
-  objectId?: string;
 };
 
 import type { Mutation } from './Mutation';
@@ -68,7 +66,7 @@ function encode(data: any, seen?: Array<any>): any {
       objectId: id
     };
   }
-  if (data instanceof Parse.GeoPoint) {
+  if (data instanceof Parse.GeoPoint || data instanceof Parse.ACL) {
     return data.toJSON();
   }
   if (data instanceof Parse.File) {
@@ -101,7 +99,11 @@ function encode(data: any, seen?: Array<any>): any {
 }
 
 function sendRequest(options: ParseRequestOptions): Parse.Promise {
-  return Parse._request(options).then(function(result) {
+  return Parse._request(
+    options.method,
+    options.path,
+    options.data
+  ).then(function(result) {
     if (result.createdAt) {
       result.createdAt = new Date(result.createdAt);
     }
@@ -126,23 +128,18 @@ function execute(
     case 'CREATE':
       return request({
         method: 'POST',
-        route: 'classes',
-        className: className,
+        path: 'classes/' + className,
         data: encode(data)
       });
     case 'DESTROY':
       return request({
         method: 'DELETE',
-        route: 'classes',
-        className: className,
-        objectId: objectId
+        path: 'classes/' + className + '/' + objectId,
       });
     case 'SET':
       return request({
         method: 'PUT',
-        route: 'classes',
-        className: className,
-        objectId: objectId,
+        path: 'classes/' + className + '/' + objectId,
         data: encode(data)
       });
     case 'UNSET':
@@ -150,9 +147,7 @@ function execute(
       payload[data] = { __op: 'Delete' };
       return request({
         method: 'PUT',
-        route: 'classes',
-        className: className,
-        objectId: objectId,
+        path: 'classes/' + className + '/' + objectId,
         data: payload
       });
     case 'INCREMENT':
@@ -163,9 +158,7 @@ function execute(
       };
       return request({
         method: 'PUT',
-        route: 'classes',
-        className: className,
-        objectId: objectId,
+        path: 'classes/' + className + '/' + objectId,
         data: payload
       });
     case 'ADD':
@@ -176,9 +169,7 @@ function execute(
       };
       return request({
         method: 'PUT',
-        route: 'classes',
-        className: className,
-        objectId: objectId,
+        path: 'classes/' + className + '/' + objectId,
         data: payload
       });
     case 'ADDUNIQUE':
@@ -189,9 +180,7 @@ function execute(
       };
       return request({
         method: 'PUT',
-        route: 'classes',
-        className: className,
-        objectId: objectId,
+        path: 'classes/' + className + '/' + objectId,
         data: payload
       });
     case 'REMOVE':
@@ -202,9 +191,7 @@ function execute(
       };
       return request({
         method: 'PUT',
-        route: 'classes',
-        className: className,
-        objectId: objectId,
+        path: 'classes/' + className + '/' + objectId,
         data: payload
       });
     case 'ADDRELATION':
@@ -215,9 +202,7 @@ function execute(
       };
       return request({
         method: 'PUT',
-        route: 'classes',
-        className: className,
-        objectId: objectId,
+        path: 'classes/' + className + '/' + objectId,
         data: payload
       });
     case 'REMOVERELATION':
@@ -228,9 +213,7 @@ function execute(
       };
       return request({
         method: 'PUT',
-        route: 'classes',
-        className: className,
-        objectId: objectId,
+        path: 'classes/' + className + '/' + objectId,
         data: payload
       });
   }

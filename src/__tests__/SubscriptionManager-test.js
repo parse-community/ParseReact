@@ -17,7 +17,7 @@ var queryHash = QueryTools.queryHash;
 var Subscription = require('../Subscription');
 var SubscriptionManager = require('../SubscriptionManager');
 
-var Parse = require('parse').Parse;
+var Parse = require('parse');
 
 describe('SubscriptionManager', function() {
   it('can index or retrieve a query by its keys', function() {

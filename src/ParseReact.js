@@ -29,6 +29,7 @@ var ParsePatches = require('./ParsePatches');
 ParsePatches.applyPatches();
 
 module.exports = {
+  Component: require('./ParseComponent'),
   currentUser: LocalSubscriptions.currentUser,
   Mixin: require('./Mixin'),
   Mutation: require('./Mutation'),

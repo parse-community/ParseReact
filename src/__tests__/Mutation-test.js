@@ -10,6 +10,7 @@ jest.dontMock('../Mutation');
 var Delta = require('../Delta');
 var Id = require('../Id');
 var Mutation = require('../Mutation');
+var Parse = require('../StubParse');
 
 describe('Mutation Generators', function() {
   it('generates a Create Mutation', function() {

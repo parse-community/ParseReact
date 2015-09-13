@@ -24,7 +24,7 @@ var Parse = require('parse').Parse;
 // ParseReact sits on top of your Parse singleton
 var ParseReact = require('parse-react');
 var React = require('react');
-var ParseComponent = require('parse-react/class')
+var ParseComponent = ParseReact.Component(React);
 
 var TodoItem = require('./TodoItem.react.js');
 var TodoCreator = require('./TodoCreator.react.js');

@@ -10,8 +10,11 @@ var source = require('vinyl-source-stream');
 var uglify = require('gulp-uglify');
 var insert = require('gulp-insert');
 var replace = require('gulp-replace');
+var path = require('path');
 
 var pkg = require('./package.json');
+
+var BUILD = process.env.REACT_NATIVE ? 'react-native' : 'browser';
 
 function versionHeader() {
   return (
@@ -53,10 +56,11 @@ function fullHeader() {
 
 // Compile ES6 + Flow source into ES5 code for the npm package
 gulp.task('lib', function() {
-  return gulp.src('./src/*.js')
-    .pipe(babel())
-    .pipe(replace(/@flow/g, ''))
-    .pipe(gulp.dest('./lib'));
+  var stream = gulp.src('./src/*.js').pipe(babel());
+  if (process.env.REACT_NATIVE) {
+    stream = stream.pipe(replace(/require\('parse'\)/g, "require('parse/react-native')"));
+  }
+  return stream.pipe(gulp.dest(path.join('lib', BUILD)));
 });
 
 // Build the concatentated and compressed files for CDN and download
