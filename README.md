@@ -73,9 +73,8 @@ ParseReact.Mutation.Create('Comment', {
 
 ## Getting Started
 
-You can download Parse + React from [within this Github repo](/dist/). It's
-also available [on our CDN](https://www.parsecdn.com/js/parse-react.js)
-([minified](https://www.parsecdn.com/js/parse-react.min.js)), and on
+Parse + React  is available from [our CDN](https://www.parsecdn.com/js/parse-react.js)
+([minified](https://www.parsecdn.com/js/parse-react.min.js)), and 
 [npm](https://www.npmjs.com/package/parse-react).
 
 If you're not familiar with React, we recommend you first walk through their
