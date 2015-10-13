@@ -325,8 +325,6 @@ describe('Object storage', function() {
     ObjectStore.storeQueryResults(results, query);
     expectedHash = queryHash(query);
     expectedSubscribers[expectedHash] = true;
-    console.log(ObjectStore._rawStore);
-    console.log(ObjectStore._rawStore['Item:I1'].data.children);
     expect(ObjectStore._rawStore).toEqual({
       'Item:I1': {
         data: {
