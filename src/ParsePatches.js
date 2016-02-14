@@ -80,8 +80,9 @@ var patches = {
     });
   },
   logOut: function() {
-    var promise = oldLogOut();
-    LocalSubscriptions.currentUser.update();
+    var promise = oldLogOut().then(function() {
+      LocalSubscriptions.currentUser.update();
+    });
     return promise;
   },
 };
