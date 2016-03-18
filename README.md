@@ -2,6 +2,9 @@
 
 Seamlessly bringing Parse data into your React applications.
 
+**NOTE**: Parse + React only supports the Parse JS SDK up to version 1.6.14. Behavior with 1.7.* is unpredictable, and 1.8.* breaks functionality with the new LiveQueries feature.
+As developers, we want to encourage patterns that integrate easily into both the server and the client, and are working on a new low-level SDK that works well with Redux and React Native. When that codebase is ready for production apps, we will publish a new recommended starter kit for apps built on Parse & React.
+
 [![Build Status](https://travis-ci.org/ParsePlatform/ParseReact.svg?branch=master)](https://travis-ci.org/ParsePlatform/ParseReact) [![npm version](https://badge.fury.io/js/parse-react.svg)](http://badge.fury.io/js/parse-react)
 
 ## Overview
