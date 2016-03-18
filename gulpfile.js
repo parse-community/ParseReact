@@ -31,7 +31,7 @@ function fullHeader() {
     ' *  Parse + React\n' +
     ' *  v' + pkg.version + '\n' +
     ' *\n' +
-    ' *  Copyright (c) 2015, Parse, LLC. All rights reserved.\n' +
+    ' *  Copyright (c) 2016, Parse, LLC. All rights reserved.\n' +
     ' *\n' +
     ' *  You are hereby granted a non-exclusive, worldwide, royalty-free license to\n' +
     ' *  use, copy, modify, and distribute this software in source code or binary\n' +

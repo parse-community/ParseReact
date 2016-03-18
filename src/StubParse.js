@@ -34,5 +34,15 @@ if (typeof Parse === 'undefined') {
     throw new Error('Cannot initialize Parse + React: Parse is not defined.');
   }
 } else {
+  if (Parse.CoreManager) {
+    let version = Parse.CoreManager.get('VERSION') || '';
+    if (version.substr(0, 2) === 'js') {
+      version = version.substr(2); // Remove 'js'
+    }
+    let minor = version.substr(0, 3);
+    if (minor > '1.6') {
+      throw new Error('Parse + React is only compatible with Parse 1.6.*');
+    }
+  }
   module.exports = Parse;
 }
