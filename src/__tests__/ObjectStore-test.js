@@ -316,6 +316,85 @@ describe('Object storage', function() {
         queries: {}
       }
     });
+
+    query.include('children');
+    results[0].set('children', [
+      new Item({ id: 'I4', value: 14 }),
+      new Item({ id: 'I5', value: 15 })
+    ]);
+    ObjectStore.storeQueryResults(results, query);
+    expectedHash = queryHash(query);
+    expectedSubscribers[expectedHash] = true;
+    expect(ObjectStore._rawStore).toEqual({
+      'Item:I1': {
+        data: {
+          id: new Id('Item', 'I1'),
+          className: 'Item',
+          objectId: 'I1',
+          value: 11,
+          child: {
+            __type: 'Pointer',
+            className: 'Item',
+            objectId: 'I2'
+          },
+          children: [
+            {
+              __type: 'Pointer',
+              className: 'Item',
+              objectId: 'I4'
+            },
+            {
+              __type: 'Pointer',
+              className: 'Item',
+              objectId: 'I5'
+            }
+          ]
+        },
+        queries: expectedSubscribers
+      },
+      'Item:I2': {
+        data: {
+          id: new Id('Item', 'I2'),
+          className: 'Item',
+          objectId: 'I2',
+          value: 12,
+          child: {
+            __type: 'Pointer',
+            className: 'Item',
+            objectId: 'I3'
+          }
+        },
+        queries: {}
+      },
+      'Item:I3': {
+        data: {
+          id: new Id('Item', 'I3'),
+          className: 'Item',
+          objectId: 'I3',
+          value: 13
+        },
+        queries: {}
+      },
+      'Item:I4': {
+        data: {
+          id: new Id('Item', 'I4'),
+          className: 'Item',
+          objectId: 'I4',
+          value: 14
+        },
+        queries: {}
+      },
+      'Item:I5': {
+        data: {
+          id: new Id('Item', 'I5'),
+          className: 'Item',
+          objectId: 'I5',
+          value: 15
+        },
+        queries: {}
+      }
+    });
+
   });
 
   it('fetches objects to fill pointer values', function() {
@@ -374,6 +453,44 @@ describe('Object storage', function() {
         }
       }
     });
+
+    results = new Item({
+      id: 'I1',
+      value: 11,
+      children: [
+        new Item({
+          id: 'I2',
+          value: 12
+        }),
+        new Item({
+          id: 'I3',
+          value: 13
+        })
+      ]
+    });
+    query = new Parse.Query(Item).include('children');
+    ObjectStore.storeQueryResults(results, query);
+    expect(ObjectStore.deepFetch(new Id('Item', 'I1'))).toEqual({
+      id: new Id('Item', 'I1'),
+      className: 'Item',
+      objectId: 'I1',
+      value: 11,
+      children: [
+        {
+          id: new Id('Item', 'I2'),
+          className: 'Item',
+          objectId: 'I2',
+          value: 12
+        },
+        {
+          id: new Id('Item', 'I3'),
+          className: 'Item',
+          objectId: 'I3',
+          value: 13
+        }
+      ]
+    });
+
   });
 
   it('supplies data for all pointers that exist at the same depth', function() {
