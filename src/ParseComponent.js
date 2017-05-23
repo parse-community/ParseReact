@@ -34,8 +34,8 @@ var warning = require('./warning');
 
 export default function(React) {
   return class ParseComponent extends React.Component {
-    constructor(...args) {
-      super(...args);
+    constructor(props) {
+      super(props);
       this._subscriptions = {};
       this.data = {};
 
