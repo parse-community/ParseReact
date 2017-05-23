@@ -396,6 +396,17 @@ function deepFetch(id: Id, seen?: Array<string>): ?FlattenedObjectData {
         seenChildren = seenChildren.concat([childId.toString()]);
         return deepFetch(childId, seen.concat(seenChildren));
       }
+      return val;
+    }
+  }
+
+  for (var attr in source) {
+    var sourceVal = source[attr];
+    // Arrays of pointers may need to be populated
+    if (Array.isArray(sourceVal)) {
+      sourceVal = sourceVal.map(populatePointer);
+    } else {
+      sourceVal = populatePointer(sourceVal);
     }
 
     return val;
