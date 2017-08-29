@@ -148,7 +148,7 @@ export default function(React) {
 
     _unsubscribe() {
       for (var name in this._subscriptions) {
-        if (this._subscriptions[name]) {
+        if (this._subscriptions[name] && this._subscriptions[name].dispose) {
           this._subscriptions[name].dispose();
         }
     }
