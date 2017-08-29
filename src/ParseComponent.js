@@ -148,8 +148,10 @@ export default function(React) {
 
     _unsubscribe() {
       for (var name in this._subscriptions) {
-        this._subscriptions[name].dispose();
-      }
+        if (this._subscriptions[name]) {
+          this._subscriptions[name].dispose();
+        }
+    }
       this._subscriptions = {};
     }
 
