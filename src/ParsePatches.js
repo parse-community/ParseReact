@@ -90,15 +90,9 @@ var pointerMethods = ['equalTo', 'notEqualTo', 'containedIn', 'notContainedIn'];
 
 var ParsePatches = {
   applyPatches: function() {
-    if (!Parse.Object.prototype.toPlainObject) {
-      Parse.Object.prototype.toPlainObject = patches.toPlainObject;
-    }
-    if (!Parse.Query.prototype.subscribe) {
-      Parse.Query.prototype.subscribe = patches.subscribe;
-    }
-    if (!Parse.Query.prototype.observeOne) {
-      Parse.Query.prototype.observeOne = patches.observeOne;
-    }
+    Parse.Object.prototype.toPlainObject = patches.toPlainObject;
+    Parse.Query.prototype.subscribe = patches.subscribe;
+    Parse.Query.prototype.observeOne = patches.observeOne;
     pointerMethods.forEach(function(method) {
       var old = Parse.Query.prototype[method];
       Parse.Query.prototype[method] = function(attr, value) {
