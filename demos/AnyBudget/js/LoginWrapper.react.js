@@ -66,6 +66,14 @@ var LoginWrapper = React.createClass({
             <div className='row centered errors'>{this.state.error}</div> :
             null
           }
+          {
+            this.state.signup ?
+          	<div className='row'>
+            	<label htmlFor='email'>Email</label>
+            	<input ref='email' id='email' type='email' />
+			</div> :
+            null
+          }
           <div className='row'>
             <label htmlFor='username'>Username</label>
             <input ref='username' id='username' type='text' />
@@ -92,14 +100,18 @@ var LoginWrapper = React.createClass({
 
   submit: function() {
     var self = this;
+    
     var username = React.findDOMNode(this.refs.username).value;
     var password = React.findDOMNode(this.refs.password).value;
     if (username.length && password.length) {
       if (this.state.signup) {
         console.log('signup');
+		var email = React.findDOMNode(this.refs.email).value;
+		
         var u = new Parse.User({
           username: username,
-          password: password
+          password: password,
+          email: email
         });
         u.signUp().then(function() {
           self.setState({
